@@ -10,12 +10,11 @@ DMOs class:
     3. Stride-Performance: map paramters to wb, remove not assigned s_id, or strides with False quality check
     4: WB-level: average strides on the wb
     5: WB-level: Cadence, PA state
+    
     6: Day level: avg on short, medium, long WB of stride-performance parameters
     7: Day level: Mobility -> strides count etc
     8: Day level: Complexity
     9: KDE: single day or interval of days, -> KDEs + mode, median, mean p95 (min 10WB)
-    
-    
     class collector
     class wb level: labelling, mapping, cadence, pa
     class day: stride performance avg, macro dmos
@@ -382,6 +381,7 @@ class WalkingBouts:
         - duration_s
         - n_strides_total
         - n_strides_valid
+        - cadence
         - average gait parameters after cleaning
         """
 
@@ -451,6 +451,7 @@ class WalkingBouts:
                     "WB_id_day",
                     "WB_label",
                     "duration_s",
+                    "cadence_[steps_per_min]"
                 ]
             ]
             .drop_duplicates()
@@ -471,9 +472,79 @@ class WalkingBouts:
             "duration_s",
             "n_strides_total",
             "n_strides_valid",
+            "cadence_[steps_per_min]",
         ] + columns_to_average
 
         self.wb_parameters_average = self.wb_parameters_average[ordered_columns]
+
+        return self
+    def add_cadence_to_wb_dataframe(self, use_valid_strides=False):
+        """
+        Adds cadence to wb_dataframe.
+    
+        Cadence is defined as steps per minute.
+    
+        steps = n_strides * 2
+        cadence = steps / duration_s * 60
+    
+        If use_valid_strides=False:
+            cadence is computed using parameters_before_cleaning
+            -> all strides assigned to the WB before quality filtering.
+    
+        If use_valid_strides=True:
+            cadence is computed using parameters
+            -> only valid strides after quality filtering.
+        """
+    
+        if "WB_id_day" not in self.wb_dataframe.columns:
+            raise KeyError(
+                "Column 'WB_id_day' not found in wb_dataframe. "
+                "Run create_daily_wb_id() before add_cadence_to_wb_dataframe()."
+            )
+    
+        if "duration_s" not in self.wb_dataframe.columns:
+            raise KeyError("Column 'duration_s' not found in wb_dataframe")
+    
+        if use_valid_strides:
+            stride_source = self.parameters
+            stride_column = "n_strides_valid"
+        else:
+            if self.parameters_before_cleaning.empty:
+                raise ValueError(
+                    "parameters_before_cleaning is empty. "
+                    "Run clean_parameters() before add_cadence_to_wb_dataframe()."
+                )
+    
+            stride_source = self.parameters_before_cleaning
+            stride_column = "n_strides_total"
+    
+        n_strides = self._compute_n_strides(
+            stride_source,
+            output_column=stride_column,
+        )
+    
+        group_columns = [
+            "patient_id",
+            "recording_date",
+            "WB_id_day",
+        ]
+    
+        self.wb_dataframe = self.wb_dataframe.merge(
+            n_strides,
+            on=group_columns,
+            how="left",
+        )
+    
+        self.wb_dataframe["cadence_[steps_per_min]"] = pd.NA
+    
+        valid_duration = self.wb_dataframe["duration_s"] > 0
+    
+        self.wb_dataframe.loc[valid_duration, "cadence_[steps_per_min]"] = (
+            self.wb_dataframe.loc[valid_duration, stride_column]
+            * 2
+            / self.wb_dataframe.loc[valid_duration, "duration_s"]
+            * 60
+        )
 
         return self
 if __name__ == "__main__":
@@ -498,6 +569,7 @@ if __name__ == "__main__":
     wb.assign_wb_id_to_parameters()
     wb.create_daily_wb_id()
     wb.clean_parameters(use_quality_check=True)
+    wb.add_cadence_to_wb_dataframe(use_valid_strides=False)
     wb.compute_wb_parameters_average()
 
     parameters = wb.parameters
