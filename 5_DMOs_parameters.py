@@ -27,6 +27,7 @@ from pathlib import Path
 import pandas as pd
 import json
 import ast
+import numpy as np
 class CollectorCSV:
     def __init__(self, patient_id, date, patient_directory):
         self.patient_id = patient_id
@@ -404,6 +405,8 @@ class WalkingBouts:
             "stride time [s]",
             "swing time [s]",
             "stance time [s]",
+            "percent_stance_phase",
+            "percent_swing_phase",
             "arc length [m]",
             "gait velocity [m/s]",
             "ic angle [deg]",
@@ -414,7 +417,6 @@ class WalkingBouts:
             "tc angle [deg]",
             "turning angle [deg]",
         ]
-
         group_columns = [
             "patient_id",
             "recording_date",
@@ -547,9 +549,134 @@ class WalkingBouts:
         )
 
         return self
+
+    def add_stance_swing_percentages(
+        self,
+        stance_col="stance time [s]",
+        swing_col="swing time [s]",
+        stride_col="stride time [s]",
+        stance_percent_col="percent_stance_phase",
+        swing_percent_col="percent_swing_phase"
+    ):
+        """
+        Adds stance and swing percentages to parameters.
+    
+        percent_stance_phase = stance time / stride time * 100
+        percent_swing_phase  = swing time / stride time * 100
+        """
+    
+        required_cols = [stance_col, swing_col, stride_col]
+    
+        for col in required_cols:
+            if col not in self.parameters.columns:
+                raise KeyError(f"Column '{col}' not found in parameters")
+    
+        stride = self.parameters[stride_col]
+    
+        self.parameters[stance_percent_col] = np.where(
+            stride > 0,
+            self.parameters[stance_col] / stride * 100,
+            np.nan
+        )
+    
+        self.parameters[swing_percent_col] = np.where(
+            stride > 0,
+            self.parameters[swing_col] / stride * 100,
+            np.nan
+        )
+    
+        return self
+    
+class DayLevelDMOs:
+    def __init__(self, wb_parameters_average):
+        self.wb_parameters_average = wb_parameters_average.copy()
+        self.day_dmos = pd.DataFrame()
+
+    def count_wb_by_label(self):
+        """
+        Computes day-level number of walking bouts by WB_label.
+
+        Output columns:
+        - patient_id
+        - recording_date
+        - n_very_short_WB
+        - n_short_WB
+        - n_medium_WB
+        - n_long_WB
+        """
+
+        required_columns = [
+            "patient_id",
+            "recording_date",
+            "WB_id_day",
+            "WB_label",
+        ]
+
+        for col in required_columns:
+            if col not in self.wb_parameters_average.columns:
+                raise KeyError(f"Column '{col}' not found in wb_parameters_average")
+
+        wb_counts = (
+            self.wb_parameters_average
+            .drop_duplicates(
+                subset=[
+                    "patient_id",
+                    "recording_date",
+                    "WB_id_day",
+                ]
+            )
+            .groupby(
+                [
+                    "patient_id",
+                    "recording_date",
+                    "WB_label",
+                ]
+            )
+            .size()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+
+        expected_labels = [
+            "very_short",
+            "short",
+            "medium",
+            "long",
+        ]
+
+        for label in expected_labels:
+            if label not in wb_counts.columns:
+                wb_counts[label] = 0
+
+        wb_counts = wb_counts.rename(
+            columns={
+                "very_short": "n_very_short_WB",
+                "short": "n_short_WB",
+                "medium": "n_medium_WB",
+                "long": "n_long_WB",
+            }
+        )
+
+        ordered_columns = [
+            "patient_id",
+            "recording_date",
+            "n_very_short_WB",
+            "n_short_WB",
+            "n_medium_WB",
+            "n_long_WB",
+        ]
+
+        self.day_dmos = wb_counts[ordered_columns]
+
+        return self
+
+
+
+
+
 if __name__ == "__main__":
     patient_id = "PAT401"
-    date = "2023-07-10"
+    date = "2023-07-14"
 
     patient_directory = (
         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
@@ -569,6 +696,7 @@ if __name__ == "__main__":
     wb.assign_wb_id_to_parameters()
     wb.create_daily_wb_id()
     wb.clean_parameters(use_quality_check=True)
+    wb.add_stance_swing_percentages()
     wb.add_cadence_to_wb_dataframe(use_valid_strides=False)
     wb.compute_wb_parameters_average()
 
@@ -578,54 +706,14 @@ if __name__ == "__main__":
     wb_pauses_dataframe = wb.wb_pauses_dataframe
     wb_parameters_average = wb.wb_parameters_average
     log = collector.log
+    
+    
+    day = DayLevelDMOs(wb_parameters_average)
+    day.count_wb_by_label()
+    
+    day_dmos = day.day_dmos
+    
+    print("\nDay-level DMOs:")
+    print(day_dmos)
 
-    print("\nParameters before cleaning:")
-    print(parameters_before_cleaning[[
-        "patient_id",
-        "recording_date",
-        "session_id",
-        "foot",
-        "s_id",
-        "WB_id",
-        "WB_id_day",
-        "quality_check",
-    ]].head(20))
-
-    print("\nParameters after cleaning:")
-    print(parameters[[
-        "patient_id",
-        "recording_date",
-        "session_id",
-        "foot",
-        "s_id",
-        "WB_id",
-        "WB_id_day",
-        "quality_check",
-    ]].head(20))
-
-    print("\nWalking bouts with daily WB id:")
-    print(wb_dataframe[[
-        "patient_id",
-        "recording_date",
-        "session_id",
-        "WB_id",
-        "WB_id_day",
-        "duration_s",
-        "WB_label",
-    ]].head(20))
-
-    print("\nAverage parameters per walking bout of the day:")
-    print(wb_parameters_average.head())
-
-    print("\nStride counts:")
-    print(wb_parameters_average[[
-        "patient_id",
-        "recording_date",
-        "WB_id_day",
-        "WB_label",
-        "n_strides_total",
-        "n_strides_valid",
-    ]].head(20))
-
-    print("\nColumns:")
-    print(wb_parameters_average.columns)
+ 
