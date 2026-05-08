@@ -445,18 +445,26 @@ class WalkingBouts:
             output_column="n_strides_valid",
         )
 
+        wb_info_columns = [
+            "patient_id",
+            "recording_date",
+            "session_id",
+            "WB_id",
+            "WB_id_day",
+            "start",
+            "end",
+            "duration_s",
+            "WB_label",
+            "cadence_[steps_per_min]",
+        ]
+        
+        for col in wb_info_columns:
+            if col not in self.wb_dataframe.columns:
+                raise KeyError(f"Column '{col}' not found in wb_dataframe")
+        
         wb_info = (
-            self.wb_dataframe[
-                [
-                    "patient_id",
-                    "recording_date",
-                    "WB_id_day",
-                    "WB_label",
-                    "duration_s",
-                    "cadence_[steps_per_min]"
-                ]
-            ]
-            .drop_duplicates()
+            self.wb_dataframe[wb_info_columns]
+            .drop_duplicates(subset=["patient_id", "recording_date", "WB_id_day"])
         )
 
         self.wb_parameters_average = (
@@ -469,9 +477,13 @@ class WalkingBouts:
         ordered_columns = [
             "patient_id",
             "recording_date",
+            "session_id",
+            "WB_id",
             "WB_id_day",
-            "WB_label",
+            "start",
+            "end",
             "duration_s",
+            "WB_label",
             "n_strides_total",
             "n_strides_valid",
             "cadence_[steps_per_min]",
@@ -676,7 +688,7 @@ class DayLevelDMOs:
 
 if __name__ == "__main__":
     patient_id = "PAT401"
-    date = "2023-07-14"
+    date = "2023-07-10"
 
     patient_directory = (
         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
