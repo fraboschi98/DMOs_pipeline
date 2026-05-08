@@ -28,6 +28,10 @@ import pandas as pd
 import json
 import ast
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+import re
 class CollectorCSV:
     def __init__(self, patient_id, date, patient_directory):
         self.patient_id = patient_id
@@ -389,7 +393,8 @@ class WalkingBouts:
             "duration_s",
             "WB_label",
             "cadence_[steps_per_min]",
-            "PA_type"
+            "PA_type",
+            "PA_state",
         ]
     
         for col in wb_info_columns:
@@ -420,7 +425,8 @@ class WalkingBouts:
             "n_strides_total",
             "n_strides_valid",
             "cadence_[steps_per_min]",
-            "PA_type"
+            "PA_type",
+            "PA_state"
         ] + columns_to_average
     
         self.wb_parameters_average = self.wb_parameters_average[ordered_columns]
@@ -564,7 +570,294 @@ class WalkingBouts:
             "PA_type"
         ] = "LPA"
     
-        return self   
+        return self 
+    def add_pa_state_to_wb_dataframe(self, choice="traditional"):
+        """
+        Add physical activity state labels to each walking bout.
+        
+        This method assigns a PA_state to every row of wb_dataframe using
+        walking-bout duration and cadence. The PA_state is a numeric label that
+        represents a combination of duration range and cadence range.
+        
+        Two PA-state definitions are available:
+        
+        - "traditional":
+            Uses 3 duration ranges and 4 cadence ranges, resulting in 12 states.
+            States are numbered from 7 to 18.
+        
+            Duration thresholds:
+            - duration_s <= 30
+            - 30 < duration_s <= 120
+            - duration_s > 120
+        
+            Cadence thresholds:
+            - cadence <= 50 steps/min
+            - 50 < cadence <= 80 steps/min
+            - 80 < cadence <= 140 steps/min
+            - cadence > 140 steps/min
+        
+        - "modified":
+            Uses 4 duration ranges and 5 cadence ranges, resulting in 20 states.
+            States are numbered from 7 to 26.
+        
+            Duration thresholds:
+            - duration_s <= 30
+            - 30 < duration_s <= 120
+            - 120 < duration_s <= 360
+            - duration_s > 360
+        
+            Cadence thresholds:
+            - cadence <= 70 steps/min
+            - 70 < cadence <= 90 steps/min
+            - 90 < cadence <= 110 steps/min
+            - 110 < cadence <= 130 steps/min
+            - cadence > 130 steps/min
+        
+        Parameters
+        ----------
+        choice : {"traditional", "modified"}, default="traditional"
+            PA-state definition to apply.
+        
+        Returns
+        -------
+        self
+            Updated WalkingBouts instance with a new PA_state column in
+            wb_dataframe.
+        
+        Raises
+        ------
+        KeyError
+            If one of the required columns is missing from wb_dataframe.
+        
+        ValueError
+            If choice is not "traditional" or "modified".
+        
+        Notes
+        -----
+        This method must be called after add_cadence_to_wb_dataframe(), because
+        the PA_state assignment requires the cadence_[steps_per_min] column.
+        
+        Required columns in wb_dataframe are:
+        
+        - patient_id
+        - recording_date
+        - WB_id
+        - start
+        - end
+        - duration_s
+        - cadence_[steps_per_min]
+        
+        Examples
+        --------
+        >>> wb.add_cadence_to_wb_dataframe()
+        >>> wb.add_pa_state_to_wb_dataframe(choice="traditional")
+        >>> wb.wb_dataframe[["WB_id", "duration_s", "cadence_[steps_per_min]", "PA_state"]]
+        
+        >>> wb.add_pa_state_to_wb_dataframe(choice="modified")
+        """
+    
+        required_cols = [
+            "patient_id",
+            "recording_date",
+            "WB_id",
+            "start",
+            "end",
+            "duration_s",
+            "cadence_[steps_per_min]",
+        ]
+    
+        for col in required_cols:
+            if col not in self.wb_dataframe.columns:
+                raise KeyError(f"Column '{col}' not found in wb_dataframe")
+    
+        df = self.wb_dataframe.copy()
+    
+        cadence = df["cadence_[steps_per_min]"]
+        duration = df["duration_s"]
+    
+        if choice == "traditional":
+            thc1, thc2, thc3 = 50, 80, 140
+            thd1, thd2 = 30, 120
+    
+            conditions = [
+                (cadence <= thc1) & (duration <= thd1),
+                (cadence > thc1) & (cadence <= thc2) & (duration <= thd1),
+                (cadence > thc2) & (cadence <= thc3) & (duration <= thd1),
+                (cadence > thc3) & (duration <= thd1),
+    
+                (cadence <= thc1) & (duration > thd1) & (duration <= thd2),
+                (cadence > thc1) & (cadence <= thc2) & (duration > thd1) & (duration <= thd2),
+                (cadence > thc2) & (cadence <= thc3) & (duration > thd1) & (duration <= thd2),
+                (cadence > thc3) & (duration > thd1) & (duration <= thd2),
+    
+                (cadence <= thc1) & (duration > thd2),
+                (cadence > thc1) & (cadence <= thc2) & (duration > thd2),
+                (cadence > thc2) & (cadence <= thc3) & (duration > thd2),
+                (cadence > thc3) & (duration > thd2),
+            ]
+    
+            choices = list(range(7, 19))
+    
+        elif choice == "modified":
+            cadence_bins = [70, 90, 110, 130]
+            duration_bins = [30, 120, 360]
+    
+            conditions = []
+            choices = []
+            state = 7
+    
+            for dur_idx in range(4):
+                dur_low = 0 if dur_idx == 0 else duration_bins[dur_idx - 1]
+                dur_high = duration_bins[dur_idx] if dur_idx < 3 else np.inf
+    
+                for cad_idx in range(5):
+                    cad_low = 0 if cad_idx == 0 else cadence_bins[cad_idx - 1]
+                    cad_high = cadence_bins[cad_idx] if cad_idx < 4 else np.inf
+    
+                    cond = (
+                        (duration > dur_low)
+                        & (duration <= dur_high)
+                        & (cadence > cad_low)
+                        & (cadence <= cad_high)
+                    )
+    
+                    conditions.append(cond)
+                    choices.append(state)
+                    state += 1
+    
+        else:
+            raise ValueError("Invalid choice. Use 'traditional' or 'modified'.")
+    
+        self.wb_dataframe["PA_state"] = np.select(
+            conditions,
+            choices,
+            default=np.nan,
+        )
+    
+        return self
+
+    def run(
+        self,
+        use_quality_check=True,
+        use_valid_strides_for_cadence=False,
+        pa_state_choice="modified",
+    ):
+        """
+        Run the complete walking-bout processing pipeline.
+    
+        This method applies the standard WB-level processing steps in the
+        correct order:
+    
+        1. Add WB duration labels.
+        2. Assign WB_id to stride-level parameters.
+        3. Clean stride-level parameters.
+        4. Add stance and swing percentages.
+        5. Compute WB-level cadence.
+        6. Add PA_type.
+        7. Add PA_state.
+        8. Compute WB-level average gait parameters.
+    
+        Parameters
+        ----------
+        use_quality_check : bool, default=True
+            If True, removes strides with quality_check == False.
+    
+        use_valid_strides_for_cadence : bool, default=False
+            If False, cadence is computed using all strides assigned to the WB
+            before quality filtering.
+            If True, cadence is computed using only valid strides after quality
+            filtering.
+    
+        pa_state_choice : {"traditional", "modified"}, default="modified"
+            PA-state definition used by add_pa_state_to_wb_dataframe().
+    
+        Returns
+        -------
+        self
+            Updated WalkingBouts instance.
+        """
+    
+        self.add_wb_label()
+        self.assign_wb_id_to_parameters()
+        self.clean_parameters(use_quality_check=use_quality_check)
+        self.add_stance_swing_percentages()
+        self.add_cadence_to_wb_dataframe(
+            use_valid_strides=use_valid_strides_for_cadence
+        )
+        self.add_pa_type_to_wb_dataframe()
+        self.add_pa_state_to_wb_dataframe(choice=pa_state_choice)
+        self.compute_wb_parameters_average()
+    
+        return self
+
+
+
+    def save_wb_parameters_average(self, output_folder):
+        """
+        Save wb_parameters_average as a CSV file.
+    
+        The output filename is created using patient_id and recording_date:
+    
+            <patient_id>_<recording_date>_wb_parameters_average.csv
+    
+        Parameters
+        ----------
+        output_folder : str or pathlib.Path
+            Folder where the CSV file will be saved.
+    
+        Returns
+        -------
+        pathlib.Path
+            Path of the saved CSV file.
+    
+        Raises
+        ------
+        ValueError
+            If wb_parameters_average is empty.
+        """
+    
+        if self.wb_parameters_average.empty:
+            raise ValueError(
+                "wb_parameters_average is empty. "
+                "Run compute_wb_parameters_average() or run() before saving."
+            )
+    
+        required_cols = ["patient_id", "recording_date"]
+    
+        for col in required_cols:
+            if col not in self.wb_parameters_average.columns:
+                raise KeyError(f"Column '{col}' not found in wb_parameters_average")
+    
+        output_folder = Path(output_folder)
+        output_folder.mkdir(parents=True, exist_ok=True)
+    
+        patient_id = self.wb_parameters_average["patient_id"].iloc[0]
+        recording_date = self.wb_parameters_average["recording_date"].iloc[0]
+    
+        filename = f"{patient_id}_{recording_date}_wb_parameters_average.csv"
+        output_path = output_folder / filename
+    
+        self.wb_parameters_average.to_csv(output_path, index=False)
+    
+        return output_path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class DayLevelDMOs:
     def __init__(self, wb_parameters_average, log=None):
         self.wb_parameters_average = wb_parameters_average.copy()
@@ -1375,6 +1668,548 @@ class DayLevelDMOs:
             )
     
         return self
+    def run(
+        self,
+        use_valid_strides_for_distance=False,
+        aggregation="mean",
+        include_very_short=False,
+    ):
+        """
+        Run the complete day-level DMO pipeline.
+    
+        This method computes the standard day-level Digital Mobility Outcomes
+        from wb_parameters_average.
+    
+        Parameters
+        ----------
+        use_valid_strides_for_distance : bool, default=False
+            If False, estimated distance is computed using n_strides_total.
+            If True, estimated distance is computed using n_strides_valid.
+    
+        aggregation : {"mean", "median"}, default="mean"
+            Aggregation used for WB-label parameter summaries.
+    
+        include_very_short : bool, default=False
+            If False, excludes very_short walking bouts from WB-label parameter
+            summaries and between-WB diversity.
+            If True, includes very_short walking bouts.
+    
+        Returns
+        -------
+        self
+            Updated DayLevelDMOs instance with day_dmos computed.
+        """
+    
+        self.count_wb_by_label()
+        self.count_total_strides()
+        self.compute_estimated_distance_walked(
+            use_valid_strides=use_valid_strides_for_distance
+        )
+        self.compute_time_spent_pa()
+        self.compute_wearing_time_from_log()
+        self.compute_percentage_time_spent_walking()
+        self.compute_max_wb_duration()
+        self.compute_wb_label_parameter_summary(
+            aggregation=aggregation,
+            include_very_short=include_very_short,
+        )
+        self.compute_between_wb_diversity_by_label(
+            include_very_short=include_very_short,
+        )
+    
+        return self   
+
+    def save_day_dmos(self, output_folder):
+        """
+        Save day_dmos as a CSV file.
+    
+        The output filename is created using patient_id and recording_date:
+    
+            <patient_id>_<recording_date>_day_dmos.csv
+    
+        Parameters
+        ----------
+        output_folder : str or pathlib.Path
+            Folder where the CSV file will be saved.
+    
+        Returns
+        -------
+        pathlib.Path
+            Path of the saved CSV file.
+    
+        Raises
+        ------
+        ValueError
+            If day_dmos is empty.
+    
+        KeyError
+            If patient_id or recording_date is missing from day_dmos.
+        """
+    
+        if self.day_dmos.empty:
+            raise ValueError(
+                "day_dmos is empty. Run run() before saving."
+            )
+    
+        required_cols = ["patient_id", "recording_date"]
+    
+        for col in required_cols:
+            if col not in self.day_dmos.columns:
+                raise KeyError(f"Column '{col}' not found in day_dmos")
+    
+        output_folder = Path(output_folder)
+        output_folder.mkdir(parents=True, exist_ok=True)
+    
+        patient_id = self.day_dmos["patient_id"].iloc[0]
+        recording_date = self.day_dmos["recording_date"].iloc[0]
+    
+        filename = f"{patient_id}_{recording_date}_day_dmos.csv"
+        output_path = output_folder / filename
+    
+        self.day_dmos.to_csv(output_path, index=False)
+    
+        return output_path
+    
+#%%
+
+
+
+class KDE:
+    """
+    Generate histogram and KDE distribution plots from WB-level gait parameters.
+
+    This class takes wb_parameters_average as input and creates one plot per
+    selected gait feature. Walking bouts are stratified by WB_label.
+
+    Only these WB labels are used:
+
+    - short
+    - medium
+    - long
+
+    very_short walking bouts are always excluded.
+
+    Parameters
+    ----------
+    wb_parameters_average : pandas.DataFrame
+        WB-level dataframe generated by WalkingBouts.compute_wb_parameters_average().
+
+    patient_id : str, optional
+        Patient identifier to filter. If None, all patients are used.
+
+    date : str, optional
+        Single recording date to filter.
+
+    dates : list of str, optional
+        List of recording dates to filter.
+
+    features : "all", str, or list of str, default="all"
+        Features to plot.
+
+        If "all", all default gait features are plotted.
+        If str, only that feature is plotted.
+        If list, only the selected features are plotted.
+
+    Attributes
+    ----------
+    df : pandas.DataFrame
+        Filtered dataframe used for plotting.
+
+    features : list of str
+        List of selected features.
+    """
+
+    def __init__(
+        self,
+        wb_parameters_average,
+        patient_id=None,
+        date=None,
+        dates=None,
+        features="all",
+    ):
+        self.wb_parameters_average = wb_parameters_average.copy()
+        self.patient_id = patient_id
+        self.date = date
+        self.dates = dates
+
+        self.default_features = [
+            "stride time [s]",
+            "swing time [s]",
+            "stance time [s]",
+            "percent_stance_phase",
+            "percent_swing_phase",
+            "arc length [m]",
+            "gait velocity [m/s]",
+            "ic angle [deg]",
+            "max. lateral excursion [m]",
+            "max. orientation change [deg]",
+            "max. sensor lift [m]",
+            "stride length [m]",
+            "tc angle [deg]",
+            "turning angle [deg]",
+        ]
+
+        self.label_order = [
+            "short",
+            "medium",
+            "long",
+        ]
+
+        self.palette = {
+            "short": "tab:blue",
+            "medium": "tab:orange",
+            "long": "tab:green",
+        }
+
+        self.features = self._select_features(features)
+        self.df = self._filter_data()
+
+    def _select_features(self, features):
+        """
+        Select gait features to plot.
+        """
+
+        if features == "all":
+            return self.default_features
+
+        if isinstance(features, str):
+            return [features]
+
+        if isinstance(features, list):
+            return features
+
+        raise ValueError("features must be 'all', a string, or a list of strings.")
+
+    def _filter_data(self):
+        """
+        Filter input dataframe by patient_id, date, and dates.
+        """
+
+        required_columns = [
+            "patient_id",
+            "recording_date",
+            "WB_id",
+            "WB_label",
+        ]
+
+        for col in required_columns:
+            if col not in self.wb_parameters_average.columns:
+                raise KeyError(f"Column '{col}' not found in wb_parameters_average")
+
+        if self.date is not None and self.dates is not None:
+            raise ValueError("Use either date or dates, not both.")
+
+        df = self.wb_parameters_average.copy()
+
+        if self.patient_id is not None:
+            df = df[df["patient_id"] == self.patient_id].copy()
+
+        if self.date is not None:
+            df = df[df["recording_date"] == self.date].copy()
+
+        if self.dates is not None:
+            df = df[df["recording_date"].isin(self.dates)].copy()
+
+        df = df[df["WB_label"].isin(self.label_order)].copy()
+
+        return df.reset_index(drop=True)
+
+    def generate_plots(
+        self,
+        output_dir=None,
+        save=True,
+        show=False,
+        min_wb=10,
+        bins=30,
+        dpi=150,
+    ):
+        """
+        Generate histogram and KDE plots.
+
+        For each selected feature and patient, this method plots the
+        distribution of WB-level values separately for short, medium, and long
+        walking bouts.
+
+        A WB label is skipped completely if it contains fewer than min_wb
+        walking bouts.
+
+        Each plotted label includes:
+
+        - histogram
+        - KDE curve
+        - solid vertical line for KDE mode
+        - dashed vertical line for 95th percentile
+
+        Parameters
+        ----------
+        output_dir : str or pathlib.Path, optional
+            Base output directory. Plots are saved inside:
+
+                output_dir / "KDE_plot" / patient_id
+
+        save : bool, default=True
+            If True, saves plots as PNG files.
+
+        show : bool, default=False
+            If True, displays plots.
+
+        min_wb : int, default=10
+            Minimum number of WBs required to plot a WB label.
+
+        bins : int, default=30
+            Number of histogram bins.
+
+        dpi : int, default=150
+            Resolution of saved PNG files.
+
+        Returns
+        -------
+        self
+            Updated KDE instance.
+        """
+
+        if self.df.empty:
+            print("No data available for plotting.")
+            return self
+
+        for feature in self.features:
+            if feature not in self.df.columns:
+                raise KeyError(f"Column '{feature}' not found in wb_parameters_average")
+
+        if save:
+            if output_dir is None:
+                raise ValueError("output_dir must be provided when save=True.")
+
+            kde_folder = Path(output_dir) / "KDE_plot"
+            kde_folder.mkdir(parents=True, exist_ok=True)
+
+        patient_ids = self.df["patient_id"].dropna().unique()
+
+        for patient_id in patient_ids:
+            patient_df = self.df[self.df["patient_id"] == patient_id].copy()
+
+            if save:
+                patient_folder = kde_folder / str(patient_id)
+                patient_folder.mkdir(parents=True, exist_ok=True)
+
+            for feature in self.features:
+                fig, ax1 = plt.subplots(figsize=(12, 6))
+                ax2 = ax1.twinx()
+
+                plotted_anything = False
+
+                for label in self.label_order:
+                    subset = (
+                        patient_df.loc[
+                            patient_df["WB_label"] == label,
+                            feature,
+                        ]
+                        .dropna()
+                        .astype(float)
+                    )
+
+                    if len(subset) < min_wb:
+                        continue
+
+                    if subset.nunique() <= 1:
+                        continue
+
+                    plotted_anything = True
+
+                    sns.histplot(
+                        subset,
+                        bins=bins,
+                        kde=False,
+                        stat="count",
+                        color=self.palette[label],
+                        alpha=0.35,
+                        edgecolor=None,
+                        label=f"{label.capitalize()} WBs",
+                        ax=ax1,
+                    )
+
+                    sns.kdeplot(
+                        subset,
+                        color=self.palette[label],
+                        linewidth=2.0,
+                        fill=False,
+                        bw_adjust=1.0,
+                        ax=ax2,
+                    )
+
+                    kde_line = ax2.get_lines()[-1]
+                    kde_x = kde_line.get_xdata()
+                    kde_y = kde_line.get_ydata()
+
+                    mode_value = kde_x[np.argmax(kde_y)]
+                    p95_value = subset.quantile(0.95)
+
+                    ax1.axvline(
+                        mode_value,
+                        color=self.palette[label],
+                        linestyle="-",
+                        linewidth=1.8,
+                        alpha=0.95,
+                    )
+
+                    ax1.axvline(
+                        p95_value,
+                        color=self.palette[label],
+                        linestyle="--",
+                        linewidth=1.5,
+                        alpha=0.95,
+                    )
+
+                    ax1.plot(
+                        [],
+                        [],
+                        color=self.palette[label],
+                        linestyle="-",
+                        linewidth=1.8,
+                        label=f"{label.capitalize()} Mode={mode_value:.2f}",
+                    )
+
+                    ax1.plot(
+                        [],
+                        [],
+                        color=self.palette[label],
+                        linestyle="--",
+                        linewidth=1.5,
+                        label=f"{label.capitalize()} P95={p95_value:.2f}",
+                    )
+
+                if not plotted_anything:
+                    plt.close(fig)
+                    continue
+
+                title_suffix = self._make_title_suffix(patient_df)
+
+                ax1.set_xlabel(feature, fontsize=12)
+                ax1.set_ylabel("Number of WBs", fontsize=12)
+                ax2.set_ylabel("Density", fontsize=12)
+
+                ax1.set_title(
+                    f"Distribution of {feature} — Patient {patient_id}{title_suffix}",
+                    fontsize=14,
+                )
+
+                ax1.legend(
+                    loc="upper right",
+                    frameon=True,
+                )
+
+                plt.tight_layout()
+
+                if save:
+                    feature_clean = self._clean_filename(feature)
+                    date_part = self._make_filename_date_part(patient_df)
+
+                    filename = f"{patient_id}_{date_part}_KDE_{feature_clean}.png"
+                    filepath = patient_folder / filename
+
+                    plt.savefig(filepath, format="png", dpi=dpi)
+
+                if show:
+                    plt.show()
+
+                plt.close(fig)
+
+        return self
+
+    def run(
+        self,
+        output_dir=None,
+        save=True,
+        show=False,
+        min_wb=10,
+        bins=30,
+        dpi=150,
+    ):
+        """
+        Run KDE plot generation.
+
+        This is a convenience method that calls generate_plots().
+
+        Parameters
+        ----------
+        output_dir : str or pathlib.Path, optional
+            Base output directory.
+
+        save : bool, default=True
+            If True, saves plots.
+
+        show : bool, default=False
+            If True, displays plots.
+
+        min_wb : int, default=10
+            Minimum number of WBs required per WB label.
+
+        bins : int, default=30
+            Number of histogram bins.
+
+        dpi : int, default=150
+            Resolution of saved PNG files.
+
+        Returns
+        -------
+        self
+            Updated KDE instance.
+        """
+
+        self.generate_plots(
+            output_dir=output_dir,
+            save=save,
+            show=show,
+            min_wb=min_wb,
+            bins=bins,
+            dpi=dpi,
+        )
+
+        return self
+
+    def _make_title_suffix(self, patient_df):
+        """
+        Create title suffix based on selected recording dates.
+        """
+
+        unique_dates = sorted(patient_df["recording_date"].dropna().unique())
+
+        if len(unique_dates) == 0:
+            return ""
+
+        if len(unique_dates) == 1:
+            return f" — {unique_dates[0]}"
+
+        return f" — {len(unique_dates)} days"
+
+    def _make_filename_date_part(self, patient_df):
+        """
+        Create filename-safe date information.
+        """
+
+        unique_dates = sorted(patient_df["recording_date"].dropna().unique())
+
+        if len(unique_dates) == 0:
+            return "all_dates"
+
+        if len(unique_dates) == 1:
+            return self._clean_filename(str(unique_dates[0]))
+
+        return "multiple_dates"
+
+    def _clean_filename(self, text):
+        """
+        Create a safe filename component.
+        """
+
+        text = str(text)
+        text = text.replace(" ", "_")
+        text = re.sub(r"[^\w\d_-]", "", text)
+
+        return text
+
+
+#%% MAIN
 if __name__ == "__main__":
     patient_id = "PAT401"
     date = "2023-07-10"
@@ -1384,52 +2219,124 @@ if __name__ == "__main__":
         r"\MobilityAPP_Pipeline\Prova\PAT401"
     )
 
+    output_folder = (
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
+        r"\MobilityAPP_Pipeline\Prova\PAT401\outputs"
+    )
+
     collector = CollectorCSV(patient_id, date, patient_directory).collect()
-    
+
     wb = WalkingBouts(
         collector.parameters,
         collector.wb_dataframe,
         collector.wb_pauses_dataframe,
     )
-    
-    wb.add_wb_label()
-    wb.assign_wb_id_to_parameters()
-    wb.clean_parameters(use_quality_check=True)
-    wb.add_stance_swing_percentages()
-    wb.add_cadence_to_wb_dataframe(use_valid_strides=False)
-    wb.add_pa_type_to_wb_dataframe()
-    wb.compute_wb_parameters_average()
-    
-    
-    wb_parameters_average = wb.wb_parameters_average
 
+    wb.run(
+        use_quality_check=True,
+        use_valid_strides_for_cadence=False,
+        pa_state_choice="modified",
+    )
+
+    saved_path = wb.save_wb_parameters_average(output_folder)
+
+    wb_parameters_average = wb.wb_parameters_average
     parameters = wb.parameters
     parameters_before_cleaning = wb.parameters_before_cleaning
     wb_dataframe = wb.wb_dataframe
-    wb_pauses_dataframe = wb.wb_pauses_dataframe
+
+    print(f"Saved WB parameters average to: {saved_path}")
+    
     wb_parameters_average = wb.wb_parameters_average
-    log = collector.log
+
+    day = DayLevelDMOs(
+        wb_parameters_average,
+        log=collector.log,
+    )
     
-    
-    day = DayLevelDMOs(wb_parameters_average, log=collector.log)
-    day.count_wb_by_label()
-    day.count_total_strides()
-    day.compute_estimated_distance_walked(use_valid_strides=False)
-    day.compute_time_spent_pa()
-    day.compute_wearing_time_from_log()
-    day.compute_percentage_time_spent_walking()
-    day.compute_max_wb_duration()
-    day.compute_wb_label_parameter_summary(
-    aggregation="mean", #or "median"
-    include_very_short=False,
-)
-    day.compute_between_wb_diversity_by_label(
-    include_very_short=False,
-)
+    day.run(
+        use_valid_strides_for_distance=False,
+        aggregation="mean",
+        include_very_short=False,
+    )
     
     day_dmos = day.day_dmos
     
-    print("\nDay-level DMOs:")
-    print(day_dmos)
+    saved_day_path = day.save_day_dmos(output_folder)
+    
+    print(f"Saved day-level DMOs to: {saved_day_path}")
+    
+    
+kde = KDE(
+    wb_parameters_average=wb.wb_parameters_average,
+    patient_id="PAT401",
+    date="2023-07-10",
+    features="gait velocity [m/s]",
+)
+
+kde.run(
+    output_dir=output_folder,
+    save=True,
+    show=False,
+    min_wb=10,
+)
+# if __name__ == "__main__":
+#     patient_id = "PAT401"
+#     date = "2023-07-10"
+
+#     patient_directory = (
+#         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
+#         r"\MobilityAPP_Pipeline\Prova\PAT401"
+#     )
+
+#     collector = CollectorCSV(patient_id, date, patient_directory).collect()
+    
+#     wb = WalkingBouts(
+#         collector.parameters,
+#         collector.wb_dataframe,
+#         collector.wb_pauses_dataframe,
+#     )
+    
+#     wb.add_wb_label()
+#     wb.assign_wb_id_to_parameters()
+#     wb.clean_parameters(use_quality_check=True)
+#     wb.add_stance_swing_percentages()
+#     wb.add_cadence_to_wb_dataframe(use_valid_strides=False)
+#     wb.add_pa_type_to_wb_dataframe()
+#     wb.add_pa_state_to_wb_dataframe(choice="modified")
+#     wb.compute_wb_parameters_average()
+    
+    
+#     wb_parameters_average = wb.wb_parameters_average
+
+#     parameters = wb.parameters
+#     parameters_before_cleaning = wb.parameters_before_cleaning
+#     wb_dataframe = wb.wb_dataframe
+#     wb_pauses_dataframe = wb.wb_pauses_dataframe
+#     wb_parameters_average = wb.wb_parameters_average
+#     log = collector.log
+    
+    
+#     day = DayLevelDMOs(wb_parameters_average, log=collector.log)
+#     day.count_wb_by_label()
+#     day.count_total_strides()
+#     day.compute_estimated_distance_walked(use_valid_strides=False)
+#     day.compute_time_spent_pa()
+#     day.compute_wearing_time_from_log()
+#     day.compute_percentage_time_spent_walking()
+#     day.compute_max_wb_duration()
+#     day.compute_wb_label_parameter_summary(
+#     aggregation="mean", #or "median"
+#     include_very_short=False,
+# )
+#     day.compute_between_wb_diversity_by_label(
+#     include_very_short=False,
+# )
+    
+#     day_dmos = day.day_dmos
+    
+    
+#     print("\nDay-level DMOs:")
+#     print(day_dmos)
 
  
