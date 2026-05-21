@@ -431,7 +431,6 @@ class GaitMapPipeline:
             plt.savefig(save_path, dpi=300, bbox_inches="tight")
     
         plt.show()
-
     def _compute_trajectories(self, df, fs, gs_list, stride_list):
         """
         Perform trajectory reconstruction with optional padding and trimming.
@@ -595,16 +594,79 @@ class GaitMapPipeline:
     
     def run_gaitmap_pipeline(self):
         """
-        Run gaitMAP pipeline using already-filtered signal.
-        Uses:
-            self.fs
-            self.config[...]
-    
-        Produces:
-            self.gs
-            self.stride_list
-            self.events
-        """
+           Run the core gaitmap-based gait analysis pipeline.
+           
+           This method applies the main processing steps required to extract
+           stride-level gait information from filtered IMU signals. It uses gaitmap
+           algorithms for gait sequence detection, stride segmentation, gait event
+           detection, trajectory reconstruction, and temporal/spatial parameter
+           calculation, with additional handling steps to improve robustness for
+           noisy real-world recordings.
+           
+           The method expects `self.signal_filtered` to be available. Therefore,
+           `filter_signal()` must be called before this method.
+           
+           Processing steps
+           ----------------
+           1. Detect gait sequences independently for the left and right sensors.
+           2. Segment strides within the detected gait sequences using dynamic time
+              warping.
+           3. Detect gait events, including initial contact, terminal contact,
+              minimum velocity, and previous initial contact.
+           4. Reconstruct stride-level orientations and positions.
+           5. Compute temporal gait parameters.
+           6. Compute spatial gait parameters.
+           7. If spatial parameter calculation fails because some stride IDs are
+              missing from the reconstructed trajectories, iteratively remove only
+              those problematic stride IDs from the spatial-parameter inputs.
+           
+           Notes
+           -----
+           The original gait event tables stored in `self.events` are preserved.
+           Cleanup for spatial-parameter calculation is applied only to
+           `self.events_clean`, `self.positions`, and `self.orientations`.
+           
+           Results are stored as attributes of the class.
+           
+           Main outputs
+           ------------
+           self.gs : dict
+               Detected gait sequences for left and right sensors.
+           
+           self.stride_list : dict
+               Segmented strides for left and right sensors.
+           
+           self.events : dict
+               Detected gait events for left and right sensors.
+           
+           self.events_clean : dict
+               Copy of the gait events after removing only the stride IDs that are
+               incompatible with spatial-parameter calculation.
+           
+           self.orientations : dict
+               Reconstructed stride-level orientations.
+           
+           self.positions : dict
+               Reconstructed stride-level positions.
+           
+           self.temporal_left, self.temporal_right : pandas.DataFrame or None
+               Temporal gait parameters for the left and right sensors.
+           
+           self.spatial_left, self.spatial_right : pandas.DataFrame or None
+               Spatial gait parameters for the left and right sensors.
+           
+           self.removed_events : dict
+               Events removed only from the spatial-parameter calculation workflow.
+           
+           Raises
+           ------
+           RuntimeError
+               If `self.signal_filtered` is missing.
+           
+           Exception
+               Re-raises unexpected errors from the global pipeline execution after
+               logging them.
+           """
     
         self.log["events"].append("run_gaitmap_pipeline: started")
         empty_gs = pd.DataFrame(columns=["gs_id", "start", "end"])
@@ -809,7 +871,7 @@ class GaitMapPipeline:
                     self.log["events"].append("Event detection skipped: no strides on either side.")
                     return
             
-                # Rampp et al. (2014) algorithm 
+                
                 ed = RamppEventDetection(
                     ic_search_region_ms=rampp_ic_search_region_ms,
                     min_vel_search_win_size_ms=rampp_min_vel_search_win_size_ms,
