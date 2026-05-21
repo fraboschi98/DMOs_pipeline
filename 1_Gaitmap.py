@@ -1547,27 +1547,59 @@ class GaitMapPipeline:
     
         plt.show()
     def compute_recording_and_wearing_time(self):
+
         """
-        Compute total recording time and estimated sensor wearing time.
+        Estimate total recording duration and sensor wearing time.
     
-        The method detects non-wearing periods using low-activity windows:
-        a window is classified as non-wearing if both accelerometer and gyroscope
-        activity remain below their thresholds.
+        This method identifies potential non-wearing periods from low-activity
+        windows computed on accelerometer and gyroscope signals. Accelerometer
+        channels are first high-pass filtered to remove the gravity component,
+        while gyroscope channels are analyzed directly.
     
-        Results are stored in:
-            self.recording_time_hours
-            self.wearing_time_hours
-            self.recording_time_str
-            self.wearing_time_str
-            self.merged_windows
-            self.log["recording_summary"]
+        For each sliding window, the vector norm of the available accelerometer
+        and gyroscope channels is computed and smoothed. A window is classified as
+        non-wearing when both signal norms remain below their respective activity
+        thresholds.
+    
+        The method supports:
+        - configurable sliding-window duration and overlap,
+        - optional forced exclusion of an initial recording segment,
+        - merging of overlapping or contiguous non-wearing windows,
+        - estimation of the first valid wearing sample.
+    
+        Results are stored both as class attributes and in the processing log.
+    
+        Processing steps
+        ----------------
+        1. Compute total recording duration from signal length and sampling rate.
+        2. High-pass filter accelerometer channels.
+        3. Compute accelerometer and gyroscope vector norms.
+        4. Smooth signal norms using a moving-average filter.
+        5. Detect candidate non-wearing windows using sliding-window thresholding.
+        6. Merge overlapping non-wearing windows.
+        7. Estimate total wearing time and first valid wearing sample.
+    
+        Notes
+        -----
+        Non-wearing detection is based on low signal activity and is intended for
+        long real-world recordings. Thresholds and window parameters may require
+        adjustment depending on sensor placement, acquisition system, and study
+        population.
     
         Returns
         -------
         dict
-            Recording and wearing-time summary.
-        """
+            Dictionary containing recording duration, wearing duration,
+            non-wearing windows, and related summary metrics.
     
+        Raises
+        ------
+        RuntimeError
+            If `self.signal_filtered` is not available.
+    
+        ValueError
+            If the configured overlap is outside the valid range.
+        """
         if self.signal_filtered is None:
             raise RuntimeError(
                 "Filtered signal missing. Run filter_signal() before compute_recording_and_wearing_time()."
