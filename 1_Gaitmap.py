@@ -272,6 +272,7 @@ class GaitMapPipeline:
 
     @staticmethod
     def _butter_lowpass_filter(data, cutoff, order, fs):
+        """Apply a low-pass Butterworth filter to a one-dimensional signal."""
         nyquist = 0.5 * fs
         normal_cutoff = cutoff / nyquist
         b, a = butter(order, normal_cutoff, btype="low", analog=False)
@@ -279,7 +280,19 @@ class GaitMapPipeline:
 
 
     def filter_signal(self):
-        '''Method applying a Butterworth low-pass filter to selected gyroscope and accelerometer channels to remove high-frequency noise from the raw signal'''
+        """
+        Apply low-pass Butterworth filtering to the available IMU channels.
+        
+        Gyroscope and accelerometer channels are filtered separately using the
+        cutoff frequencies and filter orders defined in the pipeline configuration.
+        
+        The filtered signal is stored in `self.signal_filtered`.
+        
+        Returns
+        -------
+        self
+            The pipeline instance, allowing method chaining.
+        """
         try:
             df = self.signal_raw.copy()
     
@@ -314,7 +327,7 @@ class GaitMapPipeline:
     
             self.signal_filtered = df_filtered
     
-            # Log file
+            # Updating Log file
             self.log["events"].append("filter_signal: completed")
     
     
