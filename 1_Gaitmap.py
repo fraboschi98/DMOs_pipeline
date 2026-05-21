@@ -110,22 +110,27 @@ class GaitMapPipeline:
         output_root: Optional[str] = None,
     ):
         """
+        Initialize the gaitmap-based processing pipeline.
+    
         Parameters
         ----------
-        signal_raw:
-            Raw dataframe compatible with Gaitmap requirements.
-
-        config:
-            Optional dictionary used to override selected default parameters.
-
-        path_config:
-            Optional dictionary with path settings.
-
-        patient_id, session_id, recording_date:
-            Metadata associated with the recording.
-
-        output_root:
-            Root folder where pipeline outputs will be saved.
+        signal_raw : pandas.DataFrame
+            Raw bilateral IMU signal in gaitmap-compatible format.
+    
+        config : dict, optional
+            User-defined configuration values used to override DEFAULT_CONFIG.
+    
+        patient_id : str, optional
+            Patient or participant identifier.
+    
+        session_id : str, optional
+            Recording session identifier.
+    
+        recording_date : str, optional
+            Recording date.
+    
+        output_root : str, optional
+            Root directory where pipeline outputs can be saved.
         """
 
         # Input data
@@ -133,45 +138,45 @@ class GaitMapPipeline:
 
         # Configuration
         self.config = self._build_config(config)
-        self.path_config = path_config or {}
-
+        self.fs = self.config["sampling_rate_hz"]
         
-        
-
         # Metadata
         self.patient_id = patient_id
         self.session_id = session_id
         self.recording_date = recording_date
         self.output_root = Path(output_root) if output_root is not None else None
-
-        # Attributes
-        self.fs = self.config["sampling_rate_hz"]
-        # self.time_diff_threshold = self.config["time_diff_threshold"]
-        # self.min_pause_duration_plot = self.config["pause_plot_threshold_min"]
-        # self.save_segments_images = self.config["save_segments_images"]
-
         
+        #Signal attributes
         self.signal_filtered = None
         self.timestamps_unix = None
+        self.acc_norm = None
+        self.gyr_norm = None
+        
+        # Gaitmap outputs
+        self.gs = None
+        self.stride_list = None
+        self.events = None
+        self.events_clean = None
         self.temporal_left = None
         self.temporal_right = None
         self.spatial_left = None
         self.spatial_right = None
-        self.events = None
-        self.events_clean = None
-        self.acc_norm = None
-        self.gyr_norm = None
+        self.orientations = None
+        self.positions = None
         
+        # Quality-control outputs
+        self.removed_events = {
+            "left_sensor": pd.DataFrame(),
+            "right_sensor": pd.DataFrame(),
+        }
+        
+        # Recording and wearing-time outputs
         self.recording_time_hours = None
         self.wearing_time_hours = None
         self.recording_time_str = None
         self.wearing_time_str = None
         self.merged_windows = []
-        self.removed_events = {
-    "left_sensor": pd.DataFrame(),
-    "right_sensor": pd.DataFrame(),
-}
-
+                        
         # Log
         self.log = {
             "config": deepcopy(self.config),
