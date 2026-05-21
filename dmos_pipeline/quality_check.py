@@ -45,7 +45,7 @@ Goal
 
 from pathlib import Path
 from typing import Optional, Dict, Any
-
+from copy import deepcopy
 import json
 import numpy as np
 import pandas as pd
@@ -150,20 +150,21 @@ class QualityCheck:
 
     def __init__(
         self,
-        signal_path: str,
+        signal_path: Optional[str],
         events_path: str,
         project_folder: str,
         parameters_path: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
+        signal_filtered: Optional[pd.DataFrame] = None,
     ):
         """
         Initialize the quality-check pipeline.
     
         Parameters
         ----------
-        signal_path : str
-            Path to the raw IMU signal file used to extract the signal value at
-            each detected initial-contact event.
+        signal_path : str, optional
+            Path to the raw IMU signal file. Required only if `signal_filtered`
+            is not provided.
     
         events_path : str
             Path to the gait-event CSV file produced by the gaitmap-based pipeline.
@@ -183,7 +184,8 @@ class QualityCheck:
         """
     
         # Input paths
-        self.signal_path = Path(signal_path)
+        self.signal_path = Path(signal_path) if signal_path is not None else None
+        self.signal_filtered = signal_filtered
         self.events_path = Path(events_path)
         self.project_folder = Path(project_folder)
         self.parameters_path = Path(parameters_path) if parameters_path is not None else None
@@ -215,6 +217,7 @@ class QualityCheck:
         self.parameters = None
     
         # Filtered signals used for event-level quality control
+        
         self.left_filtered = None
         self.right_filtered = None
     
@@ -253,7 +256,7 @@ class QualityCheck:
         if unknown_keys:
             raise ValueError(f"Unknown configuration key(s): {sorted(unknown_keys)}")
 
-        config = cls.DEFAULT_CONFIG.copy()
+        config = deepcopy(cls.DEFAULT_CONFIG)
         config.update(user_config)
 
         cls._validate_config(config)
@@ -401,33 +404,48 @@ class QualityCheck:
     # ============================================================
 
     def load_signal(self) -> pd.DataFrame:
+        """
+        Load the IMU signal used for event-level quality control.
+    
+        If a filtered signal dataframe was provided at initialization, it is used
+        directly. Otherwise, the signal is loaded from `signal_path`.
+        """
+    
+        if self.signal_filtered is not None:
+            return self.signal_filtered.copy()
+    
+        if self.signal_path is None:
+            raise ValueError(
+                "signal_path is None and no signal_filtered dataframe was provided."
+            )
+    
         if not self.signal_path.exists():
             raise FileNotFoundError(f"Signal file not found: {self.signal_path}")
-
+    
         try:
             df = pd.read_csv(self.signal_path, header=[0, 1])
-
+    
             if isinstance(df.columns, pd.MultiIndex):
                 cols_text = [
                     " ".join([str(x) for x in col]).lower()
                     for col in df.columns
                 ]
-
+    
                 looks_like_multiindex = (
                     any("left_sensor" in c for c in cols_text)
                     or any("right_sensor" in c for c in cols_text)
                 )
-
+    
                 if looks_like_multiindex:
                     df = self.drop_unnamed_columns(df)
                     return df.reset_index(drop=True)
-
+    
         except Exception:
             pass
-
+    
         df = pd.read_csv(self.signal_path)
         df = self.drop_unnamed_columns(df)
-
+    
         return df.reset_index(drop=True)
 
     def load_events(self) -> pd.DataFrame:
@@ -555,6 +573,25 @@ class QualityCheck:
         return parameters
 
     def load_inputs(self):
+        """
+        Load all input files required by the quality-check pipeline.
+    
+        This method loads:
+        - the raw IMU signal file,
+        - the gait-event CSV file,
+        - the stride-level parameter CSV file.
+    
+        The loaded data are stored as class attributes:
+    
+        - `self.signal_raw`
+        - `self.events`
+        - `self.parameters`
+    
+        Returns
+        -------
+        self
+            The quality-check instance, allowing method chaining.
+        """
         self.signal_raw = self.load_signal()
         self.events = self.load_events()
         self.parameters = self.load_parameters()
@@ -646,26 +683,37 @@ class QualityCheck:
         return filtered
 
     def filter_signal(self):
+        """
+        Prepare left and right filtered signals for event-level quality control.
+    
+        If a filtered signal dataframe was provided, the selected channel is
+        extracted directly. Otherwise, the raw signal is filtered first.
+        """
+    
         if self.signal_raw is None:
             raise RuntimeError("signal_raw is None. Run load_inputs() first.")
-
-        left_raw = self.get_signal_column("left_sensor", self.channel)
-        right_raw = self.get_signal_column("right_sensor", self.channel)
-
-        self.left_filtered = self.butter_lowpass_filter(
-            data=left_raw,
-            cutoff_freq=self.cutoff_freq_gyr,
-            filter_order=self.filter_order_gyr,
-            fs=self.fs,
-        )
-
-        self.right_filtered = self.butter_lowpass_filter(
-            data=right_raw,
-            cutoff_freq=self.cutoff_freq_gyr,
-            filter_order=self.filter_order_gyr,
-            fs=self.fs,
-        )
-
+    
+        left_signal = self.get_signal_column("left_sensor", self.channel)
+        right_signal = self.get_signal_column("right_sensor", self.channel)
+    
+        if self.signal_filtered is not None:
+            self.left_filtered = left_signal.to_numpy()
+            self.right_filtered = right_signal.to_numpy()
+        else:
+            self.left_filtered = self.butter_lowpass_filter(
+                data=left_signal,
+                cutoff_freq=self.cutoff_freq_gyr,
+                filter_order=self.filter_order_gyr,
+                fs=self.fs,
+            )
+    
+            self.right_filtered = self.butter_lowpass_filter(
+                data=right_signal,
+                cutoff_freq=self.cutoff_freq_gyr,
+                filter_order=self.filter_order_gyr,
+                fs=self.fs,
+            )
+    
         return self
 
     def get_ic_signal_value(self, foot: str, ic_sample: int) -> float:
@@ -983,75 +1031,3 @@ class QualityCheck:
         return self
 
 
-# ============================================================
-# DEBUG MAIN
-# ============================================================
-
-if __name__ == "__main__":
-
-    signal_path = (
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-        r"\PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv"
-    )
-
-    events_path = (
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-        r"\PAT401_week_3_2023-07-10_events.csv"
-    )
-
-    parameters_path = (
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-        r"\PAT401_week_3_2023-07-10_parameters.csv"
-    )
-
-    project_folder = (
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
-        r"\MobilityAPP_Pipeline\Prova"
-    )
-
-    user_config = {
-        "sampling_rate_hz": 102.4,
-        "channel": "gyr_ml",
-        "cutoff_freq_gyr": 5.0,
-        "filter_order_gyr": 4,
-
-        # Events IC rule
-        "ic_threshold": 0.0,
-        "events_quality_col": "quality_check(IC>0)",
-        "notes_col": "notes",
-
-        # Parameters turning angle rule
-        "turning_angle_abs_range": (25.0, 90.0),
-
-        # Parameters outlier rules
-        "parameter_rules": {
-            "stride time [s]": (0.2, 3.0),
-            "gait velocity [m/s]": (0.2, 2.0),
-            "stride length [m]": (0.10, 1.5),
-        },
-        "n_parameter_violations": 2,
-
-        # Switches
-        "apply_events_ic_check": True,
-        "apply_turning_angle_check": True,
-        "apply_parameter_outlier_check": True,
-    }
-
-    quality_check = QualityCheck(
-        signal_path=signal_path,
-        events_path=events_path,
-        parameters_path=parameters_path,
-        project_folder=project_folder,
-        config=user_config,
-    )
-
-    quality_check.run()
-
-    print("Events quality check:")
-    print(quality_check.events["quality_check(IC>0)"].value_counts(dropna=False))
-
-    print("\nParameters quality check:")
-    print(quality_check.parameters["quality_check"].value_counts(dropna=False))
-
-    print("\nSaved files:")
-    print(quality_check.saved_paths)

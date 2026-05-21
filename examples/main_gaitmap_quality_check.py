@@ -117,13 +117,13 @@ def main():
     # Step 2: quality check
     # ---------------------------------------------------------------------
     quality_check = QualityCheck(
-        signal_path=signal_path,
+        signal_path=None,
         events_path=saved_paths["events"],
         parameters_path=saved_paths["parameters"],
         project_folder=project_folder,
+        signal_filtered=pipeline.signal_filtered,
         config=quality_check_config,
     )
-
     quality_check.run()
 
     print("Gaitmap outputs:")

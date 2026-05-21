@@ -45,7 +45,7 @@ Goal
 
 from pathlib import Path
 from typing import Optional, Dict, Any
-
+from copy import deepcopy
 import json
 import numpy as np
 import pandas as pd
@@ -253,7 +253,7 @@ class QualityCheck:
         if unknown_keys:
             raise ValueError(f"Unknown configuration key(s): {sorted(unknown_keys)}")
 
-        config = cls.DEFAULT_CONFIG.copy()
+        config = deepcopy(cls.DEFAULT_CONFIG)
         config.update(user_config)
 
         cls._validate_config(config)
@@ -983,75 +983,75 @@ class QualityCheck:
         return self
 
 
-# # ============================================================
-# # DEBUG MAIN
-# # ============================================================
+# ============================================================
+# DEBUG MAIN
+# ============================================================
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     signal_path = (
-#         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-#         r"\PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv"
-#     )
+    signal_path = (
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
+        r"\PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv"
+    )
 
-#     events_path = (
-#         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-#         r"\PAT401_week_3_2023-07-10_events.csv"
-#     )
+    events_path = (
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
+        r"\PAT401_week_3_2023-07-10_events.csv"
+    )
 
-#     parameters_path = (
-#         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-#         r"\PAT401_week_3_2023-07-10_parameters.csv"
-#     )
+    parameters_path = (
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
+        r"\PAT401_week_3_2023-07-10_parameters.csv"
+    )
 
-#     project_folder = (
-#         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
-#         r"\MobilityAPP_Pipeline\Prova"
-#     )
+    project_folder = (
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)"
+        r"\MobilityAPP_Pipeline\Prova"
+    )
 
-#     user_config = {
-#         "sampling_rate_hz": 102.4,
-#         "channel": "gyr_ml",
-#         "cutoff_freq_gyr": 5.0,
-#         "filter_order_gyr": 4,
+    user_config = {
+        "sampling_rate_hz": 102.4,
+        "channel": "gyr_ml",
+        "cutoff_freq_gyr": 5.0,
+        "filter_order_gyr": 4,
 
-#         # Events IC rule
-#         "ic_threshold": 0.0,
-#         "events_quality_col": "quality_check(IC>0)",
-#         "notes_col": "notes",
+        # Events IC rule
+        "ic_threshold": 0.0,
+        "events_quality_col": "quality_check(IC>0)",
+        "notes_col": "notes",
 
-#         # Parameters turning angle rule
-#         "turning_angle_abs_range": (25.0, 90.0),
+        # Parameters turning angle rule
+        "turning_angle_abs_range": (25.0, 90.0),
 
-#         # Parameters outlier rules
-#         "parameter_rules": {
-#             "stride time [s]": (0.2, 3.0),
-#             "gait velocity [m/s]": (0.2, 2.0),
-#             "stride length [m]": (0.10, 1.5),
-#         },
-#         "n_parameter_violations": 2,
+        # Parameters outlier rules
+        "parameter_rules": {
+            "stride time [s]": (0.2, 3.0),
+            "gait velocity [m/s]": (0.2, 2.0),
+            "stride length [m]": (0.10, 1.5),
+        },
+        "n_parameter_violations": 2,
 
-#         # Switches
-#         "apply_events_ic_check": True,
-#         "apply_turning_angle_check": True,
-#         "apply_parameter_outlier_check": True,
-#     }
+        # Switches
+        "apply_events_ic_check": True,
+        "apply_turning_angle_check": True,
+        "apply_parameter_outlier_check": True,
+    }
 
-#     quality_check = QualityCheck(
-#         signal_path=signal_path,
-#         events_path=events_path,
-#         parameters_path=parameters_path,
-#         project_folder=project_folder,
-#         config=user_config,
-#     )
+    quality_check = QualityCheck(
+        signal_path=signal_path,
+        events_path=events_path,
+        parameters_path=parameters_path,
+        project_folder=project_folder,
+        config=user_config,
+    )
 
-#     quality_check.run()
+    quality_check.run()
 
-#     print("Events quality check:")
-#     print(quality_check.events["quality_check(IC>0)"].value_counts(dropna=False))
+    print("Events quality check:")
+    print(quality_check.events["quality_check(IC>0)"].value_counts(dropna=False))
 
-#     print("\nParameters quality check:")
-#     print(quality_check.parameters["quality_check"].value_counts(dropna=False))
+    print("\nParameters quality check:")
+    print(quality_check.parameters["quality_check"].value_counts(dropna=False))
 
-#     print("\nSaved files:")
-#     print(quality_check.saved_paths)
+    print("\nSaved files:")
+    print(quality_check.saved_paths)
