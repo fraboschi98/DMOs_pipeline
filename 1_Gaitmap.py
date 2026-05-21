@@ -3,9 +3,7 @@
 Created on Wed Apr 29 15:31:16 2026
 
 @author: francesca.boschi
-[1]A. Küderle et al., “Gaitmap—An Open Ecosystem for IMU-Based Human Gait Analysis and Algorithm Benchmarking,” in IEEE Open Journal of Engineering in Medicine and Biology, vol. 5, pp. 163-172, 2024, doi: 10.1109/OJEMB.2024.3356791.
 
-Gaitmap class is intended to apply Gaitmap algorithms from raw signals (previoously adapated to gaitmap bodyframe) and to extract gait events and stride -level parameters
 """
 
 from pathlib import Path
@@ -32,14 +30,26 @@ from copy import deepcopy
 
 class GaitMapPipeline:
     """
-    Pipeline to apply Gaitmap algorithms and extract stride-level gait parameters.
+    End-to-end pipeline for IMU-based gait analysis using gaitmap framework by Küderle et al. (2024).
+    
+    This class processes bilateral foot-mounted IMU signals to detect gait
+    sequences, segment strides, identify gait events, reconstruct trajectories,
+    and compute stride-level temporal and spatial parameters.
+    
+    It was developed as a preprocessing framework for extracting Digital Mobility
+    Outcomes (DMOs) from real-world recordings using gaitmap algorithms. Since gaitmap was primarily
+    designed for structured laboratory data, this pipeline adds additional
+    processing steps for free-living recordings, including signal filtering,
+    wearing-time estimation, diagnostic visualization, processing logs, and export
+    of intermediate and final results.
     """
-
+    # Default processing parameters. Values can be selectively overridden by user_config.
     DEFAULT_CONFIG = {
+        
         # ---- General ----
         "sampling_rate_hz": 102.4,
 
-        # ---- Filtering options ----
+        # ---- Signal filtering ----
         "cutoff_freq_gyr": 5.0,
         "filter_order_gyr": 4,
         "cutoff_freq_acc": 10.0,
@@ -87,16 +97,6 @@ class GaitMapPipeline:
         "wearing_highpass_order": 4,
         "wearing_smoothing_window_s": 3,
 
-        # # ---- Pause / break detection ----
-        # "time_diff_threshold": 3.0,
-
-        # # ---- Mobilise-D walking bout definition ----
-        # "threshold_oneSide": 3,
-        # "threshold_twoSides": 5,
-
-        # # ---- Plotting ----
-        # "pause_plot_threshold_min": 10.0,
-        # "save_segments_images": True,
     }
 
     def __init__(
