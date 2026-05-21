@@ -78,8 +78,8 @@ class WBpipeline:
         self.config = self._build_config(config)
 
         self.wb_pause_s_threshold = self.config["wb_pause_s_threshold"]
-        self.threshold_oneSide = self.config["threshold_oneSide"]
-        self.threshold_twoSides = self.config["threshold_twoSides"]
+        self.threshold_one_side = self.config["threshold_one_side"]
+        self.threshold_two_sides = self.config["threshold_two_sides"]
         self.pause_plot_threshold_min = self.config["pause_plot_threshold_min"]
         self.save_segments_images = self.config["save_segments_images"]
         self.use_only_quality_checked_events = self.config["use_only_quality_checked_events"]
@@ -115,6 +115,22 @@ class WBpipeline:
 
     @classmethod
     def _build_config(cls, user_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Build the final walking-bout configuration dictionary.
+    
+        User-defined values are used to override selected keys in `DEFAULT_CONFIG`.
+        Unknown configuration keys are rejected to avoid silent mistakes.
+    
+        Parameters
+        ----------
+        user_config : dict, optional
+            Dictionary containing configuration values to override.
+    
+        Returns
+        -------
+        dict
+            Validated configuration dictionary.
+        """
 
         user_config = user_config or {}
 
@@ -133,15 +149,28 @@ class WBpipeline:
 
     @staticmethod
     def _validate_config(config: Dict[str, Any]) -> None:
+        """
+    Validate walking-bout extraction configuration values.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary to validate.
+
+    Raises
+    ------
+    ValueError
+        If one or more configuration values are invalid.
+    """
 
         if config["wb_pause_s_threshold"] <= 0:
             raise ValueError("wb_pause_s_threshold must be greater than 0.")
 
-        if config["threshold_oneSide"] <= 0:
-            raise ValueError("threshold_oneSide must be greater than 0.")
+        if config["threshold_one_side"] <= 0:
+            raise ValueError("threshold_one_side must be greater than 0.")
 
-        if config["threshold_twoSides"] <= 0:
-            raise ValueError("threshold_twoSides must be greater than 0.")
+        if config["threshold_two_sides"] <= 0:
+            raise ValueError("threshold_two_sides must be greater than 0.")
 
         if config["pause_plot_threshold_min"] < 0:
             raise ValueError("pause_plot_threshold_min cannot be negative.")
@@ -155,17 +184,32 @@ class WBpipeline:
             raise ValueError("event_quality_column must be a string.")
     def apply_event_quality_filter(self):
         """
-        Optionally remove events that did not pass the event-level quality check.
+       Filter gait events using event-level quality-control labels.
     
-        If use_only_quality_checked_events is True:
-            keep only rows where event_quality_column == True
+       If `use_only_quality_checked_events` is True, only events where
+       `event_quality_column` evaluates to True are retained. If it is False,
+       all events are kept.
     
-        If use_only_quality_checked_events is False:
-            keep all events.
+       The method supports boolean quality columns as well as string-like values
+       such as "true", "1", or "yes".
     
-        This method expects the events CSV to already contain the quality column
-        produced by the QualityCheck class.
-        """
+       This method expects the events CSV to already contain the quality-control
+       column produced by `QualityCheck`.
+    
+       Returns
+       -------
+       self
+           The pipeline instance, allowing method chaining.
+    
+       Raises
+       ------
+       RuntimeError
+           If the events table has not been loaded.
+    
+       ValueError
+           If quality filtering is enabled but the configured quality column is
+           missing from the events table.
+       """
     
         if self.events is None:
             raise RuntimeError("self.events is None. Run load_events() first.")
@@ -238,7 +282,22 @@ class WBpipeline:
 
     def _load_source_log(self) -> None:
         """
-        Load the GaitMapPipeline log JSON.
+        Locate the source processing log in the session folder.
+        
+        The source log is the JSON file produced by `GaitMapPipeline`. It is used
+        to retrieve recording metadata and the sampling frequency needed for
+        walking-bout extraction.
+        
+        Files ending with `_wb_log.json` are ignored so that future logs produced
+        by `WBPipeline` are not accidentally selected as source logs.
+        
+        Raises
+        ------
+        FileNotFoundError
+            If no gait-processing log is found in the session folder.
+        
+        ValueError
+            If more than one candidate source log is found.
         """
 
         with open(self.source_log_path, "r", encoding="utf-8") as f:
@@ -248,9 +307,28 @@ class WBpipeline:
 
     def _read_metadata_from_source_log(self) -> None:
         """
-        Read patient_id, recording_date, session_id, and sampling frequency
-        from the GaitMapPipeline log.
-        """
+           Read recording metadata and sampling frequency from the source log.
+           
+           The source log is expected to be the JSON file produced by
+           `GaitMapPipeline`. The metadata are used to identify the session and to
+           build output filenames, while the sampling frequency is required to convert
+           sample intervals into seconds during walking-bout extraction.
+           
+           The following values are read:
+           
+           - `patient_id`
+           - `recording_date`
+           - `session_id`
+           - `sampling_rate_hz`
+           
+           Raises
+           ------
+           RuntimeError
+               If the source log has not been loaded.
+           
+           KeyError
+               If required sections or keys are missing from the source log.
+           """
 
         if self.source_log is None:
             raise RuntimeError("source_log is None. Run _load_source_log() first.")
@@ -295,23 +373,53 @@ class WBpipeline:
 
     def _prepare_labeled_events_from_csv(self) -> None:
         """
-        Prepare left and right event tables from the saved events CSV.
-    
-        Methodological note
-        -------------------
-        The previous GaitMapPipeline saves one combined event table with a column
-        named 'foot'. For walking-bout pause detection, the left and right feet must
-        be treated separately because pauses are first detected independently per
-        foot and then combined.
-    
-        Output attributes
-        -----------------
-        self.events_left_labeled
-            Event table for the left foot only.
-    
-        self.events_right_labeled
-            Event table for the right foot only.
-        """
+            Split the combined events table into left and right foot event tables.
+        
+            The events CSV produced by the previous processing steps contains one
+            combined table with a `foot` column. For walking-bout pause detection,
+            left and right foot events are processed separately because inter-stride
+            gaps are first detected independently for each foot and then combined.
+        
+            The method validates the required event columns, converts sample-index
+            columns to integers, removes incomplete rows, normalizes the `foot` column,
+            and stores two sorted event tables.
+        
+            Required columns
+            ----------------
+            s_id
+                Stride identifier.
+        
+            foot
+                Foot label. Expected values are "left" and "right".
+        
+            start, end
+                Stride start and end sample indices.
+        
+            ic
+                Initial-contact sample index.
+        
+            pre_ic
+                Previous initial-contact sample index.
+        
+            Output attributes
+            -----------------
+            self.events_left_labeled : pandas.DataFrame
+                Event table for left-foot strides, sorted by `ic`.
+        
+            self.events_right_labeled : pandas.DataFrame
+                Event table for right-foot strides, sorted by `ic`.
+        
+            Raises
+            ------
+            RuntimeError
+                If the events table has not been loaded.
+        
+            TypeError
+                If `self.events` is not a pandas DataFrame.
+        
+            ValueError
+                If one or more required columns are missing.
+            """
     
         if self.events is None:
             raise RuntimeError("self.events is None. Load the events CSV first.")
@@ -590,7 +698,7 @@ class WBpipeline:
     
         are marked as 1 when the gap duration is greater than the selected threshold.
     
-        In WB_pauses_detection(), this threshold is intentionally set to 0 because
+        In detect_wb_pauses(), this threshold is intentionally set to 0 because
         we first mark all inter-stride gaps for each foot. The real walking-bout
         pause threshold is applied later only after combining both feet.
         """
@@ -886,16 +994,20 @@ class WBpipeline:
         return out
     
     
-    def WB_pauses_detection(self):
+    def detect_wb_pauses(self):
         """
-        Detect pauses between walking-bout candidates.
+        Detect pause-based walking-bout candidate segments.
+         
+        
+        This method identifies candidate pauses between walking bouts using the
+        temporal structure of detected gait events. Left and right foot events are
+        first processed separately to identify inter-stride gaps. These gap signals
+        are then combined to detect periods where gait events are absent from both
+        feet simultaneously.
+        
     
-        Methodological overview
+        Processing steps
         -----------------------
-        This method detects candidate walking-bout pauses using the temporal
-        structure of gait events produced by GaitMapPipeline.
-    
-        The procedure is:
     
         1. Split the saved event table into left and right foot event tables.
     
@@ -1054,8 +1166,8 @@ class WBpipeline:
     def label_wb_validity(
         self,
         segs: pd.DataFrame,
-        threshold_oneSide: int,
-        threshold_twoSides: int,
+        threshold_one_side: int,
+        threshold_two_sides: int,
     ) -> pd.DataFrame:
         """
         Label each non-pause segment as valid or not valid walking bout.
@@ -1065,17 +1177,17 @@ class WBpipeline:
         A segment is considered a valid walking bout if:
     
         1. Both feet are represented and the total number of detected events
-           between left and right is at least threshold_twoSides.
+           between left and right is at least threshold_two_sides.
     
-           Example with threshold_twoSides = 5:
+           Example with threshold_two_sides = 5:
                left = 4, right = 1  -> validWB
                left = 3, right = 2  -> validWB
                left = 2, right = 2  -> not_validWB
     
         2. Only one foot is represented and that foot has more than
-           threshold_oneSide detected events.
+           threshold_one_side detected events.
     
-           Example with threshold_oneSide = 3:
+           Example with threshold_one_side = 3:
                left = 4, right = 0  -> validWB
                left = 3, right = 0  -> not_validWB
     
@@ -1118,20 +1230,20 @@ class WBpipeline:
             both_sides_valid = (
                 n_left > 0
                 and n_right > 0
-                and (n_left + n_right) >= threshold_twoSides
+                and (n_left + n_right) >= threshold_two_sides
             )
     
             # Case 2: only the left foot is represented.
-            # Here we use > threshold_oneSide, not >=, because with threshold 3,
+            # Here we use > threshold_one_side, not >=, because with threshold 3,
             # exactly 3 detected events are not enough for the intended WB rule.
             left_only_valid = (
-                n_left > threshold_oneSide
+                n_left > threshold_one_side
                 and n_right == 0
             )
     
             # Case 3: only the right foot is represented.
             right_only_valid = (
-                n_right > threshold_oneSide
+                n_right > threshold_one_side
                 and n_left == 0
             )
     
@@ -1147,16 +1259,27 @@ class WBpipeline:
 
     def add_wb_type(self, segs: pd.DataFrame) -> pd.DataFrame:
         """
-        Add a methodological WB type label.
+       Add a walking-bout type label to each candidate segment.
     
-        Output column
-        -------------
-        WB_type:
-            'two_sides'
-            'left_only'
-            'right_only'
-            'none'
-        """
+       The type describes whether stride IDs were assigned from both feet, only
+       the left foot, only the right foot, or neither foot.
+    
+       Output column
+       -------------
+       WB_type : str
+           One of `"two_sides"`, `"left_only"`, `"right_only"`, or `"none"`.
+    
+       Parameters
+       ----------
+       segs : pandas.DataFrame
+           Candidate segment table containing `total_strides_left` and
+           `total_strides_right`.
+    
+       Returns
+       -------
+       pandas.DataFrame
+           Copy of the input dataframe with the added `WB_type` column.
+       """
     
         segs = segs.copy()
     
@@ -1180,21 +1303,34 @@ class WBpipeline:
     
         return segs
     def adjust_wb_boundaries(self, segs: pd.DataFrame) -> pd.DataFrame:
+     """
+        Adjust candidate walking-bout boundaries using gait-event timing.
+    
+        Pause detection creates candidate segment boundaries from sample-wise pause
+        flags. These boundaries are pause-based and may not coincide exactly with
+        detected gait events.
+    
+        For each candidate segment, this method updates:
+    
+        - `start` to the earliest `pre_ic` inside the segment
+        - `end` to the latest `ic` inside the segment
+    
+        The original pause-based boundaries are preserved in:
+    
+        - `start_original`
+        - `end_original`
+    
+        Parameters
+        ----------
+        segs : pandas.DataFrame
+            Candidate segment table produced by `detect_wb_pauses()`.
+    
+        Returns
+        -------
+        pandas.DataFrame
+            Copy of the input dataframe with adjusted boundaries and updated
+            duration.
         """
-        Adjust candidate WB boundaries using gait events.
-    
-        Methodological note
-        -------------------
-        The pause-detection step creates segments from sample-wise pause flags.
-        Those boundaries are pause-based, not gait-event-based.
-    
-        For the final WB candidates:
-            - the start is moved to the earliest pre_ic inside the segment
-            - the end is moved to the latest ic inside the segment
-    
-        This makes the WB boundaries closer to actual gait-event timing.
-        """
-    
         segs = segs.copy()
     
         if segs.empty:
@@ -1203,7 +1339,7 @@ class WBpipeline:
         if not hasattr(self, "events_left_labeled") or not hasattr(self, "events_right_labeled"):
             raise RuntimeError(
                 "events_left_labeled and events_right_labeled are missing. "
-                "Run WB_pauses_detection() first."
+                "Run detect_wb_pauses() first."
             )
     
         adjusted_starts = []
@@ -1261,11 +1397,11 @@ class WBpipeline:
     
         Required previous step
         ----------------------
-        WB_pauses_detection() must be run before this method.
+        detect_wb_pauses() must be run before this method.
     
         Methodological flow
         -------------------
-        1. Start from non-pause segments created by WB_pauses_detection().
+        1. Start from non-pause segments created by detect_wb_pauses().
         2. Adjust each segment boundary using gait events:
             - start = earliest pre_ic inside the segment
             - end = latest ic inside the segment
@@ -1275,16 +1411,16 @@ class WBpipeline:
             - right_only
             - none
         4. Apply stride-count validity rules:
-            - valid two-sided WB if both feet have at least threshold_twoSides strides
+            - valid two-sided WB if both feet have at least threshold_two_sides strides
             - valid one-sided WB if only one foot is present and has at least
-              threshold_oneSide strides
+              threshold_one_side strides
         5. Store:
             - self.signal_segments: all labeled segments
             - self.wb: only valid walking bouts
         """
     
         if not hasattr(self, "signal_segments") or self.signal_segments is None:
-            raise RuntimeError("Run WB_pauses_detection() before WB_extraction().")
+            raise RuntimeError("Run detect_wb_pauses() before WB_extraction().")
     
         segs = self.signal_segments.copy()
     
@@ -1304,8 +1440,8 @@ class WBpipeline:
     
         segs = self.label_wb_validity(
             segs,
-            threshold_oneSide=self.threshold_oneSide,
-            threshold_twoSides=self.threshold_twoSides,
+            threshold_one_side=self.threshold_one_side,
+            threshold_two_sides=self.threshold_two_sides,
         )
     
         valid = segs[segs["label_WB"] == "validWB"].copy()
@@ -1444,8 +1580,8 @@ if __name__ == "__main__":
         "wb_pause_s_threshold": 3.0,
 
         # ---- Mobilise-D WB definition ----
-        "threshold_oneSide": 3,
-        "threshold_twoSides": 5,
+        "threshold_one_side": 3,
+        "threshold_two_sides": 5,
         
         # ---- Event quality filtering ----
     "use_only_quality_checked_events": True,
@@ -1464,7 +1600,7 @@ if __name__ == "__main__":
     # This assumes your class already loads events into self.events.
     # If not, run your load_events/load_inputs method before this line.
     pipeline.load_events()
-    pipeline.WB_pauses_detection()
+    pipeline.detect_wb_pauses()
     pipeline.WB_extraction()
     saved_paths = pipeline.save_outputs()
 

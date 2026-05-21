@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 21 12:10:28 2026
-
-@author: francesca.boschi
+DMOs pipeline package.
 """
 
 from .gaitmap_pipeline import GaitMapPipeline
 from .quality_check import QualityCheck
+from .wb_pipeline import WBpipeline
 
 __all__ = [
     "GaitMapPipeline",
     "QualityCheck",
+    "WBpipeline",
 ]
