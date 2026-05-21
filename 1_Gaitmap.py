@@ -235,17 +235,6 @@ class GaitMapPipeline:
         if config["filter_order_acc"] <= 0:
             raise ValueError("filter_order_acc must be greater than 0.")
 
-        # if config["time_diff_threshold"] <= 0:
-        #     raise ValueError("time_diff_threshold must be greater than 0.")
-
-        # if config["pause_plot_threshold_min"] < 0:
-        #     raise ValueError("pause_plot_threshold_min cannot be negative.")
-
-        # if config["threshold_oneSide"] <= 0:
-        #     raise ValueError("threshold_oneSide must be greater than 0.")
-
-        # if config["threshold_twoSides"] <= 0:
-        #     raise ValueError("threshold_twoSides must be greater than 0.")
 
         if config["dtw_min_match_length_s"] <= 0:
             raise ValueError("dtw_min_match_length_s must be greater than 0.")
@@ -2062,21 +2051,51 @@ class GaitMapPipeline:
         return out
     def save_outputs(self, project_folder: str) -> Dict[str, Path]:
         """
-        Save pipeline outputs.
-    
-        Folder structure:
-            project_folder / patient_id / recording_date / session_id /
-    
-        Files:
-            patient_id_session_id_recording_date_log.json
-            patient_id_session_id_recording_date_events.csv
-            patient_id_session_id_recording_date_parameters.csv
-    
-        Each saved CSV contains the metadata columns:
-            patient_id, recording_date, session_id
-        before the rest of the columns.
-        """
-    
+            Save pipeline outputs to disk.
+        
+            Outputs are organized using the following folder structure:
+        
+                project_folder /
+                    patient_id /
+                        recording_date /
+                            session_id /
+        
+            The method exports:
+            - processing log (`.json`),
+            - gait events (`.csv`),
+            - combined temporal and spatial gait parameters (`.csv`).
+        
+            Metadata columns (`patient_id`, `recording_date`, `session_id`) are
+            automatically added to all exported tables.
+        
+            Temporal and spatial parameter tables from the left and right sensors are
+            merged into a single stride-level parameter table before export.
+        
+            Processing steps
+            ----------------
+            1. Validate recording metadata.
+            2. Create the output directory structure.
+            3. Save the processing log as JSON.
+            4. Combine and export gait-event tables.
+            5. Combine temporal and spatial parameter tables.
+            6. Flatten potential MultiIndex column names.
+            7. Export the final stride-level parameter table.
+        
+            Parameters
+            ----------
+            project_folder : str
+                Root directory where outputs will be saved.
+        
+            Returns
+            -------
+            dict
+                Dictionary containing the paths of the saved files.
+        
+            Raises
+            ------
+            ValueError
+                If `patient_id`, `session_id`, or `recording_date` are missing.
+            """
         if self.patient_id is None:
             raise ValueError("patient_id is None.")
     
