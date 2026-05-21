@@ -17,8 +17,7 @@ import re
 
 import pandas as pd
 
-from gaitmap_pipeline import GaitMapPipeline
-from quality_check import QualityCheck
+from dmos_pipeline import GaitMapPipeline, QualityCheck
 
 
 def parse_filename_metadata(signal_path: str):
@@ -59,6 +58,13 @@ def main():
     project_folder = Path(
         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova2"
     )
+    if not signal_path.exists():
+        raise FileNotFoundError(
+            "Please update `signal_path` with the path to your gaitmap-compatible "
+            "IMU signal file."
+        )
+    
+    project_folder.mkdir(parents=True, exist_ok=True)
 
     gaitmap_config = {
         "sampling_rate_hz": 102.4,
