@@ -433,9 +433,58 @@ class GaitMapPipeline:
         plt.show()
     def _compute_trajectories(self, df, fs, gs_list, stride_list):
         """
-        Perform trajectory reconstruction with optional padding and trimming.
-        Padding/Trimming are logged whenever applied.
+        Reconstruct stride-level orientations and positions.
+    
+        This helper prepares the filtered IMU signal for gaitmap trajectory
+        reconstruction and applies `RegionLevelTrajectory` with `RtsKalman`.
+    
+        Optional preprocessing steps can be applied before reconstruction:
+    
+        1. Static padding
+           A short artificial steady-state segment can be added before the signal.
+           This is controlled by `steady_duration_s`. When padding is applied, gait
+           sequence and stride indices are shifted by the same number of samples.
+    
+        2. Gait-sequence trimming
+           The start and end of each gait sequence can be trimmed before trajectory
+           reconstruction. This is controlled by `trim_ratio`.
+    
+        3. Column renaming
+           IMU channel names are converted from the body-frame convention used in
+           this pipeline to the axis names expected by gaitmap:
+           `acc_pa`, `acc_ml`, `acc_si` become `acc_x`, `acc_y`, `acc_z`;
+           `gyr_pa`, `gyr_ml`, `gyr_si` become `gyr_x`, `gyr_y`, `gyr_z`.
+    
+        
+    
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Filtered IMU signal with bilateral sensor columns.
+    
+        fs : float
+            Sampling frequency in Hz.
+    
+        gs_list : dict
+            Gait sequence tables for each sensor side.
+    
+        stride_list : dict
+            Stride tables for each sensor side.
+    
+        Returns
+        -------
+        orientations : dict
+            Reconstructed stride-level orientations for each sensor side.
+    
+        positions : dict
+            Reconstructed stride-level positions for each sensor side.
+    
+        Notes
+        -----
+        If trajectory reconstruction fails, the error is logged and two empty
+        dictionaries are returned.
         """
+
     
         # Parameters from config (trajectories)
         steady_duration = self.config["steady_duration_s"]
@@ -474,9 +523,9 @@ class GaitMapPipeline:
     
         df_extended = pd.concat(df_extended_list, axis=1)
     
-        # ---------------------------------------------------------
-        # 2) SHIFT GS + STRIDES if padding was applied
-        # ---------------------------------------------------------
+        
+        # Shift GS + Strides if padding was applied
+       
         if steady_duration > 0:
             gs_extended = {k: v.assign(start=v["start"] + n_steady, end=v["end"] + n_steady)
                            for k, v in gs_list.items()}
@@ -488,7 +537,7 @@ class GaitMapPipeline:
             stride_extended = {k: v.copy() for k, v in stride_list.items()}
     
         # ---------------------------------------------------------
-        # 3) TRIMMING
+        # 2) TRIMMING
         # ---------------------------------------------------------
         trim = int(trim_ratio * fs)
         if trim_ratio > 0:
@@ -504,7 +553,9 @@ class GaitMapPipeline:
             for side, roi in gs_extended.items()
         }
     
-        #Column rename
+        # ---------------------------------------------------------
+        # 3) Columns rename
+        # ---------------------------------------------------------
         col_map = {
             "acc_pa": "acc_x", "acc_ml": "acc_y", "acc_si": "acc_z",
             "gyr_pa": "gyr_x", "gyr_ml": "gyr_y", "gyr_si": "gyr_z",
@@ -596,12 +647,18 @@ class GaitMapPipeline:
         """
            Run the core gaitmap-based gait analysis pipeline.
            
-           This method applies the main processing steps required to extract
-           stride-level gait information from filtered IMU signals. It uses gaitmap
-           algorithms for gait sequence detection, stride segmentation, gait event
-           detection, trajectory reconstruction, and temporal/spatial parameter
-           calculation, with additional handling steps to improve robustness for
-           noisy real-world recordings.
+            This method applies the main processing steps required to extract
+            stride-level gait information from filtered IMU signals. It uses gaitmap
+            algorithms for gait sequence detection, stride segmentation, gait event
+            detection, trajectory reconstruction, and temporal/spatial parameter
+            calculation.
+            
+            For trajectory reconstruction, this pipeline includes optional preprocessing
+            adjustments designed for real-world recordings: a configurable static padding
+            period can be added before the signal, gait sequence and stride indices are
+            shifted accordingly, and gait sequence boundaries can be trimmed before
+            trajectory estimation. These steps are intended to improve robustness when
+            working with noisy free-living data.
            
            The method expects `self.signal_filtered` to be available. Therefore,
            `filter_signal()` must be called before this method.
