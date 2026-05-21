@@ -1,0 +1,8 @@
+sphinx
+sphinx-rtd-theme
+numpy
+pandas
+scipy
+matplotlib
+gaitmap
+gaitmap_mad

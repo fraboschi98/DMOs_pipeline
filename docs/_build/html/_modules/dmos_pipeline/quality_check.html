@@ -1,0 +1,1184 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dmos_pipeline.quality_check &mdash; DMOs Pipeline  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            DMOs Pipeline
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">DMOs Pipeline</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dmos_pipeline.quality_check</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dmos_pipeline.quality_check</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">QualityCheck.</span>
+
+<span class="sd">Standalone script.</span>
+
+<span class="sd">Run after 1_Gaitmap.py.</span>
+
+<span class="sd">Goal</span>
+<span class="sd">----</span>
+<span class="sd">1. Load signal.</span>
+<span class="sd">2. Apply low-pass filter to left/right gyr_ml.</span>
+<span class="sd">3. Load events CSV produced by 1_Gaitmap.py.</span>
+<span class="sd">4. Load parameters CSV produced by 1_Gaitmap.py.</span>
+<span class="sd">5. Add quality labels to events:</span>
+<span class="sd">       - quality_check(IC&gt;0)</span>
+<span class="sd">       - notes</span>
+
+<span class="sd">   Events rule:</span>
+<span class="sd">       - if foot == left, check filtered left_sensor gyr_ml at IC sample</span>
+<span class="sd">       - if foot == right, check filtered right_sensor gyr_ml at IC sample</span>
+<span class="sd">       - quality_check(IC&gt;0) = False if filtered gyr_ml at IC &gt; 0</span>
+<span class="sd">       - quality_check(IC&gt;0) = True otherwise</span>
+
+<span class="sd">6. Add quality labels to parameters:</span>
+<span class="sd">       - quality_check</span>
+<span class="sd">       - notes</span>
+
+<span class="sd">   Parameters rules:</span>
+<span class="sd">       - turning angle:</span>
+<span class="sd">             fail if 25 &lt;= abs(turning angle [deg]) &lt;= 90</span>
+
+<span class="sd">       - parameter outlier:</span>
+<span class="sd">             fail if at least n_parameter_violations are outside configured ranges:</span>
+<span class="sd">                 stride time [s]:        0.2 to 3.0</span>
+<span class="sd">                 gait velocity [m/s]:    0.2 to 2.0</span>
+<span class="sd">                 stride length [m]:      0.10 to 1.5</span>
+
+<span class="sd">7. Overwrite:</span>
+<span class="sd">       - *_events.csv</span>
+<span class="sd">       - *_parameters.csv</span>
+
+<span class="sd">8. Update existing GaitMap log JSON with quality_check_summary.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">filtfilt</span>
+
+
+<div class="viewcode-block" id="QualityCheck">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck">[docs]</a>
+<span class="k">class</span> <span class="nc">QualityCheck</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Quality-control pipeline for gait events and stride-level gait parameters.</span>
+
+<span class="sd">    This class is intended to be run after the gaitmap-based processing</span>
+<span class="sd">    pipeline. It loads the exported IMU signal, gait-event table, and</span>
+<span class="sd">    stride-level parameter table, then adds quality-control labels without</span>
+<span class="sd">    removing any rows.</span>
+
+<span class="sd">    Two levels of quality control are applied:</span>
+
+<span class="sd">    1. Event-level quality check</span>
+<span class="sd">       Initial-contact events are checked using the filtered gyroscope signal.</span>
+<span class="sd">       For each event, the signal value is extracted at the detected initial</span>
+<span class="sd">       contact sample from the corresponding foot sensor:</span>
+
+<span class="sd">       - left foot events are checked on `left_sensor`</span>
+<span class="sd">       - right foot events are checked on `right_sensor`</span>
+
+<span class="sd">       By default, the selected channel is `gyr_ml`. An event fails the check</span>
+<span class="sd">       when the filtered gyroscope value at initial contact is greater than the</span>
+<span class="sd">       configured threshold.</span>
+
+<span class="sd">       The following columns are added to the events table:</span>
+
+<span class="sd">       - `quality_check(IC&gt;0)`</span>
+<span class="sd">       - `notes`</span>
+
+<span class="sd">       By default:</span>
+
+<span class="sd">       - `quality_check(IC&gt;0) = False` if filtered `gyr_ml` at IC &gt; 0</span>
+<span class="sd">       - `quality_check(IC&gt;0) = True` otherwise</span>
+
+<span class="sd">    2. Parameter-level quality check</span>
+<span class="sd">       Stride-level parameters are checked using configurable plausibility</span>
+<span class="sd">       rules. The default rules include:</span>
+
+<span class="sd">       - turning angle:</span>
+<span class="sd">           the row fails if `25 &lt;= abs(turning angle [deg]) &lt;= 90`</span>
+
+<span class="sd">       - parameter outliers:</span>
+<span class="sd">           the row fails if at least `n_parameter_violations` parameters fall</span>
+<span class="sd">           outside their configured ranges.</span>
+
+<span class="sd">       The default parameter ranges are:</span>
+
+<span class="sd">       - `stride time [s]`: 0.2 to 3.0</span>
+<span class="sd">       - `gait velocity [m/s]`: 0.2 to 2.0</span>
+<span class="sd">       - `stride length [m]`: 0.10 to 1.5</span>
+
+<span class="sd">       The following columns are added to the parameters table:</span>
+
+<span class="sd">       - `quality_check`</span>
+<span class="sd">       - `notes`</span>
+
+<span class="sd">    The labelled events and parameters are saved back to their original CSV</span>
+<span class="sd">    files, and the existing gaitmap processing log is updated with a</span>
+<span class="sd">    `quality_check_summary`.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This class labels data quality but does not remove events or parameter</span>
+<span class="sd">    rows. Downstream processing can decide whether to exclude failed rows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># ---- Signal ----</span>
+        <span class="s2">&quot;sampling_rate_hz&quot;</span><span class="p">:</span> <span class="mf">102.4</span><span class="p">,</span>
+        <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="s2">&quot;gyr_ml&quot;</span><span class="p">,</span>
+
+        <span class="c1"># ---- Filtering ----</span>
+        <span class="s2">&quot;cutoff_freq_gyr&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="s2">&quot;filter_order_gyr&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+
+        <span class="c1"># ---- Event-level quality check ----</span>
+        <span class="s2">&quot;ic_threshold&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;events_quality_col&quot;</span><span class="p">:</span> <span class="s2">&quot;quality_check(IC&gt;0)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;notes_col&quot;</span><span class="p">:</span> <span class="s2">&quot;notes&quot;</span><span class="p">,</span>
+
+        <span class="c1"># ---- Parameter-level quality check ----</span>
+        <span class="s2">&quot;turning_angle_abs_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">25.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">),</span>
+        <span class="s2">&quot;parameter_rules&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;stride time [s]&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">),</span>
+            <span class="s2">&quot;gait velocity [m/s]&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">),</span>
+            <span class="s2">&quot;stride length [m]&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span>
+        <span class="p">},</span>
+
+        <span class="c1"># Fail parameter outlier check if at least this number of rules are violated.</span>
+        <span class="s2">&quot;n_parameter_violations&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+
+        <span class="c1"># ---- Enable / disable checks ----</span>
+        <span class="s2">&quot;apply_events_ic_check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;apply_turning_angle_check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;apply_parameter_outlier_check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">signal_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">events_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">project_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">parameters_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">signal_filtered</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the quality-check pipeline.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        signal_path : str, optional</span>
+<span class="sd">            Path to the raw IMU signal file. Required only if `signal_filtered`</span>
+<span class="sd">            is not provided.</span>
+<span class="sd">    </span>
+<span class="sd">        events_path : str</span>
+<span class="sd">            Path to the gait-event CSV file produced by the gaitmap-based pipeline.</span>
+<span class="sd">    </span>
+<span class="sd">        project_folder : str</span>
+<span class="sd">            Root project folder. It is used to reconstruct the expected output</span>
+<span class="sd">            folder structure and to locate related pipeline outputs when needed.</span>
+<span class="sd">    </span>
+<span class="sd">        parameters_path : str, optional</span>
+<span class="sd">            Path to the stride-level parameter CSV file. If not provided, the</span>
+<span class="sd">            parameter file is searched automatically from `project_folder`,</span>
+<span class="sd">            `patient_id`, `recording_date`, and `session_id` extracted from the</span>
+<span class="sd">            events table.</span>
+<span class="sd">    </span>
+<span class="sd">        config : dict, optional</span>
+<span class="sd">            User-defined configuration values used to override `DEFAULT_CONFIG`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="c1"># Input paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">signal_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">signal_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal_filtered</span> <span class="o">=</span> <span class="n">signal_filtered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">events_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">project_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">project_folder</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">parameters_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">parameters_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    
+        <span class="c1"># Configuration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">fs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;sampling_rate_hz&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cutoff_freq_gyr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;cutoff_freq_gyr&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_order_gyr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;filter_order_gyr&quot;</span><span class="p">]</span>
+    
+        <span class="c1"># Event-level quality-check settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ic_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;ic_threshold&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events_quality_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;events_quality_col&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;notes_col&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_events_ic_check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_events_ic_check&quot;</span><span class="p">]</span>
+    
+        <span class="c1"># Parameter-level quality-check settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;turning_angle_abs_range&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;parameter_rules&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_parameter_violations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;n_parameter_violations&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_turning_angle_check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_turning_angle_check&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_parameter_outlier_check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_parameter_outlier_check&quot;</span><span class="p">]</span>
+    
+        <span class="c1"># Loaded data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal_raw</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="kc">None</span>
+    
+        <span class="c1"># Filtered signals used for event-level quality control</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span> <span class="o">=</span> <span class="kc">None</span>
+    
+        <span class="c1"># Metadata extracted from the events table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recording_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_folder</span> <span class="o">=</span> <span class="kc">None</span>
+    
+        <span class="c1"># Output paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saved_paths</span> <span class="o">=</span> <span class="p">{}</span>
+
+   
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_build_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">user_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">           Build the final configuration dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">           User-defined values are used to override selected keys in `DEFAULT_CONFIG`.</span>
+<span class="sd">           Unknown configuration keys are rejected to avoid silent mistakes.</span>
+<span class="sd">        </span>
+<span class="sd">           Parameters</span>
+<span class="sd">           ----------</span>
+<span class="sd">           user_config : dict, optional</span>
+<span class="sd">               Dictionary containing configuration values to override.</span>
+<span class="sd">        </span>
+<span class="sd">           Returns</span>
+<span class="sd">           -------</span>
+<span class="sd">           dict</span>
+<span class="sd">               Validated configuration dictionary.</span>
+<span class="sd">           &quot;&quot;&quot;</span>
+        <span class="n">user_config</span> <span class="o">=</span> <span class="n">user_config</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="n">unknown_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">user_config</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_CONFIG</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">unknown_keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown configuration key(s): </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_CONFIG</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_config</span><span class="p">)</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_validate_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_validate_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate quality-check configuration values.</span>
+<span class="sd">     </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config : dict</span>
+<span class="sd">            Configuration dictionary to validate.</span>
+<span class="sd">     </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If one or more configuration values are invalid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;sampling_rate_hz&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sampling_rate_hz must be greater than 0.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;cutoff_freq_gyr&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cutoff_freq_gyr must be greater than 0.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;filter_order_gyr&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;filter_order_gyr must be greater than 0.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;turning_angle_abs_range&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;turning_angle_abs_range must be a tuple like (25.0, 90.0).&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;parameter_rules&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;parameter_rules must be a dictionary.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;n_parameter_violations&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_parameter_violations must be greater than 0.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_events_ic_check&quot;</span><span class="p">],</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;apply_events_ic_check must be True or False.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_turning_angle_check&quot;</span><span class="p">],</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;apply_turning_angle_check must be True or False.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;apply_parameter_outlier_check&quot;</span><span class="p">],</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;apply_parameter_outlier_check must be True or False.&quot;</span><span class="p">)</span>
+
+    
+
+<div class="viewcode-block" id="QualityCheck.drop_unnamed_columns">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.drop_unnamed_columns">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">drop_unnamed_columns</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove unnamed columns created during CSV import.</span>
+<span class="sd">        </span>
+<span class="sd">        This helper supports both regular column indexes and MultiIndex columns.</span>
+<span class="sd">        It is mainly used to remove index columns accidentally saved by pandas,</span>
+<span class="sd">        such as `Unnamed: 0`.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            Input dataframe.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame</span>
+<span class="sd">            Dataframe without unnamed columns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="p">):</span>
+            <span class="n">keep_cols</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">col_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">col</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="s2">&quot;unnamed&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">col_text</span><span class="p">:</span>
+                    <span class="n">keep_cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">keep_cols</span><span class="p">]</span>
+
+        <span class="n">unnamed_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;unnamed&quot;</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">unnamed_cols</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">unnamed_cols</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.format_recording_date">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.format_recording_date">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">format_recording_date</span><span class="p">(</span><span class="n">recording_date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert a recording date to YYYY-MM-DD format.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        recording_date</span>
+<span class="sd">            Input recording date. Any value accepted by `pandas.to_datetime`</span>
+<span class="sd">            can be used.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Formatted recording date.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">recording_date</span><span class="p">,</span> <span class="n">dayfirst</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_count_pass_fail</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">quality_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Count passed and failed rows in a quality-check column.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            Dataframe containing a boolean quality-check column.</span>
+<span class="sd">    </span>
+<span class="sd">        quality_col : str</span>
+<span class="sd">            Name of the quality-check column.</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Dictionary with total, passed, and failed row counts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">quality_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;passed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;failed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">passed</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">quality_col</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span>
+        <span class="n">failed</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">quality_col</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)),</span>
+            <span class="s2">&quot;passed&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">passed</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+            <span class="s2">&quot;failed&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">failed</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+        <span class="p">}</span>
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># LOAD INPUTS</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.load_signal">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.load_signal">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the IMU signal used for event-level quality control.</span>
+<span class="sd">    </span>
+<span class="sd">        If a filtered signal dataframe was provided at initialization, it is used</span>
+<span class="sd">        directly. Otherwise, the signal is loaded from `signal_path`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_filtered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_filtered</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;signal_path is None and no signal_filtered dataframe was provided.&quot;</span>
+            <span class="p">)</span>
+    
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Signal file not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="p">):</span>
+                <span class="n">cols_text</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">col</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+                <span class="p">]</span>
+    
+                <span class="n">looks_like_multiindex</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">any</span><span class="p">(</span><span class="s2">&quot;left_sensor&quot;</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols_text</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="s2">&quot;right_sensor&quot;</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols_text</span><span class="p">)</span>
+                <span class="p">)</span>
+    
+                <span class="k">if</span> <span class="n">looks_like_multiindex</span><span class="p">:</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_unnamed_columns</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+    
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signal_path</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_unnamed_columns</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.load_events">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.load_events">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Events file not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="p">)</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_unnamed_columns</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+
+        <span class="n">required_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;patient_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;recording_date&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;s_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;foot&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;start&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;end&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ic&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;tc&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;min_vel&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pre_ic&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">missing_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">required_cols</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">missing_cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required columns in events CSV: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">numeric_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="s2">&quot;ic&quot;</span><span class="p">,</span> <span class="s2">&quot;tc&quot;</span><span class="p">,</span> <span class="s2">&quot;min_vel&quot;</span><span class="p">,</span> <span class="s2">&quot;pre_ic&quot;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">numeric_cols</span><span class="p">:</span>
+            <span class="n">events</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
+            <span class="n">subset</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;patient_id&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;recording_date&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;s_id&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;foot&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ic&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">numeric_cols</span><span class="p">:</span>
+            <span class="n">events</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">events</span><span class="p">[</span><span class="s2">&quot;foot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;foot&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="n">unique_patients</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;patient_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">unique_dates</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;recording_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">unique_sessions</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_patients</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected one patient_id, found: </span><span class="si">{</span><span class="n">unique_patients</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_dates</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected one recording_date, found: </span><span class="si">{</span><span class="n">unique_dates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_sessions</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected one session_id, found: </span><span class="si">{</span><span class="n">unique_sessions</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">unique_patients</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recording_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_recording_date</span><span class="p">(</span><span class="n">unique_dates</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">unique_sessions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_folder</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">project_folder</span>
+            <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span>
+            <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">recording_date</span>
+            <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">events</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_parameters_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters file not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;output_folder is None. Run load_events() first.&quot;</span><span class="p">)</span>
+
+        <span class="n">file_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">recording_date</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">parameters_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_folder</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_prefix</span><span class="si">}</span><span class="s2">_parameters.csv&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parameters_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters file not found: </span><span class="si">{</span><span class="n">parameters_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parameters_path</span>
+
+<div class="viewcode-block" id="QualityCheck.load_parameters">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.load_parameters">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">parameters_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parameters_path</span><span class="p">()</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">parameters_path</span><span class="p">)</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_unnamed_columns</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="n">required_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;patient_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;recording_date&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;s_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;foot&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">missing_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">required_cols</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">missing_cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required columns in parameters CSV: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">,</span> <span class="s2">&quot;foot&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;s_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;foot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;foot&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.load_inputs">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.load_inputs">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load all input files required by the quality-check pipeline.</span>
+<span class="sd">    </span>
+<span class="sd">        This method loads:</span>
+<span class="sd">        - the raw IMU signal file,</span>
+<span class="sd">        - the gait-event CSV file,</span>
+<span class="sd">        - the stride-level parameter CSV file.</span>
+<span class="sd">    </span>
+<span class="sd">        The loaded data are stored as class attributes:</span>
+<span class="sd">    </span>
+<span class="sd">        - `self.signal_raw`</span>
+<span class="sd">        - `self.events`</span>
+<span class="sd">        - `self.parameters`</span>
+<span class="sd">    </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self</span>
+<span class="sd">            The quality-check instance, allowing method chaining.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signal_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_signal</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_events</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_parameters</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># FILTERING</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.get_signal_column">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.get_signal_column">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_signal_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;signal_raw is None. Run load_inputs() first.&quot;</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_raw</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="p">):</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="p">(</span><span class="n">side</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> not found. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Available columns example: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">possible_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">possible_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find column for side=&#39;</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">&#39;, channel=&#39;</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Available columns example: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.butter_lowpass_filter">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.butter_lowpass_filter">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">butter_lowpass_filter</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">cutoff_freq</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">filter_order</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">fs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">data</span>
+
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">valid</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">filter_order</span> <span class="o">*</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span>
+
+        <span class="n">data_filled</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">limit_direction</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">nyquist</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">fs</span>
+        <span class="n">normal_cutoff</span> <span class="o">=</span> <span class="n">cutoff_freq</span> <span class="o">/</span> <span class="n">nyquist</span>
+
+        <span class="k">if</span> <span class="n">normal_cutoff</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cutoff_freq=</span><span class="si">{</span><span class="n">cutoff_freq</span><span class="si">}</span><span class="s2"> must be smaller than &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Nyquist frequency=</span><span class="si">{</span><span class="n">nyquist</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">butter</span><span class="p">(</span>
+            <span class="n">filter_order</span><span class="p">,</span>
+            <span class="n">normal_cutoff</span><span class="p">,</span>
+            <span class="n">btype</span><span class="o">=</span><span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="n">analog</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">filtered</span> <span class="o">=</span> <span class="n">filtfilt</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">data_filled</span><span class="p">)</span>
+        <span class="n">filtered</span><span class="p">[</span><span class="o">~</span><span class="n">valid</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">return</span> <span class="n">filtered</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.filter_signal">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.filter_signal">[docs]</a>
+    <span class="k">def</span> <span class="nf">filter_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepare left and right filtered signals for event-level quality control.</span>
+<span class="sd">    </span>
+<span class="sd">        If a filtered signal dataframe was provided, the selected channel is</span>
+<span class="sd">        extracted directly. Otherwise, the raw signal is filtered first.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;signal_raw is None. Run load_inputs() first.&quot;</span><span class="p">)</span>
+    
+        <span class="n">left_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_signal_column</span><span class="p">(</span><span class="s2">&quot;left_sensor&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="n">right_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_signal_column</span><span class="p">(</span><span class="s2">&quot;right_sensor&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_filtered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span> <span class="o">=</span> <span class="n">left_signal</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span> <span class="o">=</span> <span class="n">right_signal</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">butter_lowpass_filter</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">left_signal</span><span class="p">,</span>
+                <span class="n">cutoff_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutoff_freq_gyr</span><span class="p">,</span>
+                <span class="n">filter_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_order_gyr</span><span class="p">,</span>
+                <span class="n">fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fs</span><span class="p">,</span>
+            <span class="p">)</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">butter_lowpass_filter</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">right_signal</span><span class="p">,</span>
+                <span class="n">cutoff_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutoff_freq_gyr</span><span class="p">,</span>
+                <span class="n">filter_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_order_gyr</span><span class="p">,</span>
+                <span class="n">fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fs</span><span class="p">,</span>
+            <span class="p">)</span>
+    
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.get_ic_signal_value">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.get_ic_signal_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_ic_signal_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foot</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ic_sample</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">foot</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">foot</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Filtered signals are missing. Run filter_signal() first.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">foot</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span><span class="p">:</span>
+            <span class="n">signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span>
+
+        <span class="k">elif</span> <span class="n">foot</span> <span class="o">==</span> <span class="s2">&quot;right&quot;</span><span class="p">:</span>
+            <span class="n">signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">if</span> <span class="n">ic_sample</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">ic_sample</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">signal</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="n">ic_sample</span><span class="p">])</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># EVENTS QUALITY CHECK</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.label_events_quality_check">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.label_events_quality_check">[docs]</a>
+    <span class="k">def</span> <span class="nf">label_events_quality_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add:</span>
+<span class="sd">            quality_check(IC&gt;0)</span>
+<span class="sd">            notes</span>
+
+<span class="sd">        True means the event passed.</span>
+<span class="sd">        False means the event failed because filtered gyr_ml at IC &gt; threshold.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;events is None. Run load_inputs() first.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_filtered</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_filtered</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Filtered signals are missing. Run filter_signal() first.&quot;</span><span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Remove previous columns if rerunning.</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">events_quality_col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">events</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+
+        <span class="n">quality_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">notes_values</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">foot</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;foot&quot;</span><span class="p">]</span>
+            <span class="n">ic_sample</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;ic&quot;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_events_ic_check</span><span class="p">:</span>
+                <span class="n">quality_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">notes_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">ic_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ic_signal_value</span><span class="p">(</span>
+                <span class="n">foot</span><span class="o">=</span><span class="n">foot</span><span class="p">,</span>
+                <span class="n">ic_sample</span><span class="o">=</span><span class="n">ic_sample</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">failed</span> <span class="o">=</span> <span class="n">ic_value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">ic_threshold</span>
+
+            <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+                <span class="n">quality_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">notes_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;filtered </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2"> at IC sample </span><span class="si">{</span><span class="n">ic_sample</span><span class="si">}</span><span class="s2"> is &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ic_threshold</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">quality_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">notes_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">events</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">events_quality_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">quality_values</span>
+        <span class="n">events</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">notes_values</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">events</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># PARAMETERS QUALITY CHECK</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.label_parameters_quality_check">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.label_parameters_quality_check">[docs]</a>
+    <span class="k">def</span> <span class="nf">label_parameters_quality_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add:</span>
+<span class="sd">            quality_check</span>
+<span class="sd">            notes</span>
+
+<span class="sd">        True means the parameter row passed.</span>
+<span class="sd">        False means the parameter row failed at least one selected rule.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;parameters is None. Run load_inputs() first.&quot;</span><span class="p">)</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Remove previous columns if rerunning.</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;quality_check&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+
+        <span class="n">quality_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">notes_values</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">missing_rule_cols</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_parameter_outlier_check</span> <span class="ow">and</span> <span class="n">missing_rule_cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing parameter rule columns: </span><span class="si">{</span><span class="n">missing_rule_cols</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">turning_col</span> <span class="o">=</span> <span class="s2">&quot;turning angle [deg]&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_turning_angle_check</span> <span class="ow">and</span> <span class="n">turning_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required column in parameters: </span><span class="si">{</span><span class="n">turning_col</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Precompute parameter-rule violations.</span>
+        <span class="n">violations_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">violation_count</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_parameter_outlier_check</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="p">(</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+
+                <span class="n">violations_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">params</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">low</span>
+                <span class="p">)</span> <span class="o">|</span> <span class="p">(</span>
+                    <span class="n">params</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">high</span>
+                <span class="p">)</span>
+
+            <span class="n">violation_count</span> <span class="o">=</span> <span class="n">violations_df</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Precompute turning-angle violations.</span>
+        <span class="n">turning_failed</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_turning_angle_check</span><span class="p">:</span>
+            <span class="n">low_turn</span><span class="p">,</span> <span class="n">high_turn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span>
+
+            <span class="n">params</span><span class="p">[</span><span class="n">turning_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">turning_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+
+            <span class="n">abs_turning</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="n">turning_col</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+
+            <span class="n">turning_failed</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">abs_turning</span> <span class="o">&gt;=</span> <span class="n">low_turn</span>
+            <span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span>
+                <span class="n">abs_turning</span> <span class="o">&lt;=</span> <span class="n">high_turn</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_turning_angle_check</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">turning_failed</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]):</span>
+                <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;abs(turning angle [deg]) is between </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_parameter_outlier_check</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">violation_count</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_parameter_violations</span><span class="p">:</span>
+                    <span class="n">violated_cols</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span>
+                        <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">violations_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">col</span><span class="p">])</span>
+                    <span class="p">]</span>
+
+                    <span class="n">rule_text</span> <span class="o">=</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> outside </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">violated_cols</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+
+                    <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">violation_count</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="si">}</span><span class="s2"> parameter violations: </span><span class="si">{</span><span class="n">rule_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="n">passed</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">notes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+            <span class="n">quality_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">passed</span><span class="p">)</span>
+            <span class="n">notes_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notes</span><span class="p">)</span> <span class="k">if</span> <span class="n">notes</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;quality_check&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quality_values</span>
+        <span class="n">params</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">notes_values</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">params</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># LOG</span>
+    <span class="c1"># ============================================================</span>
+
+    <span class="k">def</span> <span class="nf">_get_log_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="n">events_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">log_name</span> <span class="o">=</span> <span class="n">events_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_events.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;_log.json&quot;</span><span class="p">)</span>
+        <span class="n">log_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">log_name</span>
+    
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">log_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Log file not found: </span><span class="si">{</span><span class="n">log_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+        <span class="k">return</span> <span class="n">log_path</span>
+
+<div class="viewcode-block" id="QualityCheck.build_quality_check_summary">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.build_quality_check_summary">[docs]</a>
+    <span class="k">def</span> <span class="nf">build_quality_check_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">events_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_pass_fail</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">events_quality_col</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">parameters_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_pass_fail</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+            <span class="s2">&quot;quality_check&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;QualityCheck&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Events and parameters were labelled with quality_check columns. No rows were removed.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;events_quality_column&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_quality_col</span><span class="p">,</span>
+                <span class="s2">&quot;parameters_quality_column&quot;</span><span class="p">:</span> <span class="s2">&quot;quality_check&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;notes_column&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">notes_col</span><span class="p">,</span>
+                <span class="s2">&quot;events_ic_rule&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;event passes if filtered </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2"> at IC &lt;= </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ic_threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;turning_angle_rule&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;parameter row fails if abs(turning angle [deg]) is between &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">turning_angle_abs_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;parameter_rules&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_rules</span><span class="p">,</span>
+                <span class="s2">&quot;n_parameter_violations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_parameter_violations</span><span class="p">,</span>
+                <span class="s2">&quot;sampling_rate_hz&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fs</span><span class="p">,</span>
+                <span class="s2">&quot;filter_channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                <span class="s2">&quot;cutoff_freq_gyr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff_freq_gyr</span><span class="p">,</span>
+                <span class="s2">&quot;filter_order_gyr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_order_gyr</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;events&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">events_summary</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;passed&quot;</span><span class="p">:</span> <span class="n">events_summary</span><span class="p">[</span><span class="s2">&quot;passed&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;failed&quot;</span><span class="p">:</span> <span class="n">events_summary</span><span class="p">[</span><span class="s2">&quot;failed&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">parameters_summary</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;passed&quot;</span><span class="p">:</span> <span class="n">parameters_summary</span><span class="p">[</span><span class="s2">&quot;passed&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;failed&quot;</span><span class="p">:</span> <span class="n">parameters_summary</span><span class="p">[</span><span class="s2">&quot;failed&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="QualityCheck.update_log_file">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.update_log_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">log_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_log_path</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="n">log</span><span class="p">[</span><span class="s2">&quot;quality_check_summary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_quality_check_summary</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;events&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log</span><span class="p">:</span>
+            <span class="n">log</span><span class="p">[</span><span class="s2">&quot;events&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">log</span><span class="p">[</span><span class="s2">&quot;events&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;QualityCheck: events and parameters labelled with quality_check columns. No rows removed.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">log</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">saved_paths</span><span class="p">[</span><span class="s2">&quot;updated_log&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_path</span>
+
+        <span class="k">return</span> <span class="n">log_path</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># SAVE</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.save_outputs">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.save_outputs">[docs]</a>
+    <span class="k">def</span> <span class="nf">save_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;events is None.&quot;</span><span class="p">)</span>
+    
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;parameters is None.&quot;</span><span class="p">)</span>
+    
+        <span class="n">events_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span>
+        <span class="n">parameters_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_parameters_path</span><span class="p">()</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">events_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">parameters_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">saved_paths</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;events_labelled&quot;</span><span class="p">:</span> <span class="n">events_path</span><span class="p">,</span>
+            <span class="s2">&quot;parameters_labelled&quot;</span><span class="p">:</span> <span class="n">parameters_path</span><span class="p">,</span>
+        <span class="p">}</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_log_file</span><span class="p">()</span>
+    
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">saved_paths</span></div>
+
+
+    <span class="c1"># ============================================================</span>
+    <span class="c1"># RUN</span>
+    <span class="c1"># ============================================================</span>
+
+<div class="viewcode-block" id="QualityCheck.run">
+<a class="viewcode-back" href="../../api.html#dmos_pipeline.quality_check.QualityCheck.run">[docs]</a>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_inputs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_signal</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_events_quality_check</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_parameters_quality_check</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC patient_id:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC session_id:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC recording_date:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">recording_date</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC output_folder:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_folder</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC events_path input:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">events_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QC parameters_path input:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_outputs</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+</div>
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -21,3 +21,12 @@ A complete example is available in:
 
 ```text
 examples/run_gaitmap_and_quality_check.py
+
+## Installation
+
+Clone the repository and install the required dependencies:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/DMOs_pipeline.git
+cd DMOs_pipeline
+pip install -r requirements.txt

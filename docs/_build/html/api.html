@@ -1,0 +1,762 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API reference &mdash; DMOs Pipeline  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="DMOs Pipeline documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DMOs Pipeline
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#gaitmappipeline">GaitMapPipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.DEFAULT_CONFIG"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.DEFAULT_CONFIG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.compute_recording_and_wearing_time"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.compute_recording_and_wearing_time()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.filter_signal"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.filter_signal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_gs_events"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.plot_gs_events()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_raw_filtered_channel"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.plot_raw_filtered_channel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_signal_with_non_wearing"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.plot_signal_with_non_wearing()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.run_gaitmap_pipeline"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.run_gaitmap_pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.save_outputs"><code class="docutils literal notranslate"><span class="pre">GaitMapPipeline.save_outputs()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#qualitycheck">QualityCheck</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck"><code class="docutils literal notranslate"><span class="pre">QualityCheck</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.DEFAULT_CONFIG"><code class="docutils literal notranslate"><span class="pre">QualityCheck.DEFAULT_CONFIG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.build_quality_check_summary"><code class="docutils literal notranslate"><span class="pre">QualityCheck.build_quality_check_summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.butter_lowpass_filter"><code class="docutils literal notranslate"><span class="pre">QualityCheck.butter_lowpass_filter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.drop_unnamed_columns"><code class="docutils literal notranslate"><span class="pre">QualityCheck.drop_unnamed_columns()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.filter_signal"><code class="docutils literal notranslate"><span class="pre">QualityCheck.filter_signal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.format_recording_date"><code class="docutils literal notranslate"><span class="pre">QualityCheck.format_recording_date()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.get_ic_signal_value"><code class="docutils literal notranslate"><span class="pre">QualityCheck.get_ic_signal_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.get_signal_column"><code class="docutils literal notranslate"><span class="pre">QualityCheck.get_signal_column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.label_events_quality_check"><code class="docutils literal notranslate"><span class="pre">QualityCheck.label_events_quality_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.label_parameters_quality_check"><code class="docutils literal notranslate"><span class="pre">QualityCheck.label_parameters_quality_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.load_events"><code class="docutils literal notranslate"><span class="pre">QualityCheck.load_events()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.load_inputs"><code class="docutils literal notranslate"><span class="pre">QualityCheck.load_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.load_parameters"><code class="docutils literal notranslate"><span class="pre">QualityCheck.load_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.load_signal"><code class="docutils literal notranslate"><span class="pre">QualityCheck.load_signal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.run"><code class="docutils literal notranslate"><span class="pre">QualityCheck.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.save_outputs"><code class="docutils literal notranslate"><span class="pre">QualityCheck.save_outputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dmos_pipeline.quality_check.QualityCheck.update_log_file"><code class="docutils literal notranslate"><span class="pre">QualityCheck.update_log_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DMOs Pipeline</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<section id="gaitmappipeline">
+<h2>GaitMapPipeline<a class="headerlink" href="#gaitmappipeline" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dmos_pipeline.gaitmap_pipeline.</span></span><span class="sig-name descname"><span class="pre">GaitMapPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal_raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patient_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recording_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>End-to-end pipeline for IMU-based gait analysis using gaitmap framework by Küderle et al. (2024).</p>
+<p>This class processes bilateral foot-mounted IMU signals to detect gait
+sequences, segment strides, identify gait events, reconstruct trajectories,
+and compute stride-level temporal and spatial parameters.</p>
+<p>It was developed as a preprocessing framework for extracting Digital Mobility
+Outcomes (DMOs) from real-world recordings using gaitmap algorithms. Since gaitmap was primarily
+designed for structured laboratory data, this pipeline adds additional
+processing steps for free-living recordings, including signal filtering,
+wearing-time estimation, diagnostic visualization, processing logs, and export
+of intermediate and final results.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.DEFAULT_CONFIG">
+<span class="sig-name descname"><span class="pre">DEFAULT_CONFIG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'acc_wearing_threshold':</span> <span class="pre">0.49050000000000005,</span> <span class="pre">'active_signal_threshold':</span> <span class="pre">10,</span> <span class="pre">'additional_margin_s':</span> <span class="pre">None,</span> <span class="pre">'cutoff_freq_acc':</span> <span class="pre">10.0,</span> <span class="pre">'cutoff_freq_gyr':</span> <span class="pre">5.0,</span> <span class="pre">'dtw_conflict_resolution':</span> <span class="pre">True,</span> <span class="pre">'dtw_find_matches_method':</span> <span class="pre">'find_peaks',</span> <span class="pre">'dtw_max_cost':</span> <span class="pre">4.0,</span> <span class="pre">'dtw_max_match_length_s':</span> <span class="pre">3.0,</span> <span class="pre">'dtw_max_signal_stretch_ms':</span> <span class="pre">None,</span> <span class="pre">'dtw_max_template_stretch_ms':</span> <span class="pre">None,</span> <span class="pre">'dtw_min_match_length_s':</span> <span class="pre">0.6,</span> <span class="pre">'dtw_snap_to_min_axis':</span> <span class="pre">'gyr_ml',</span> <span class="pre">'dtw_snap_to_min_win_ms':</span> <span class="pre">300,</span> <span class="pre">'filter_order_acc':</span> <span class="pre">4,</span> <span class="pre">'filter_order_gyr':</span> <span class="pre">4,</span> <span class="pre">'gyr_wearing_threshold':</span> <span class="pre">2.0,</span> <span class="pre">'harmonic_tolerance_hz':</span> <span class="pre">0.8,</span> <span class="pre">'locomotion_band':</span> <span class="pre">(0.4,</span> <span class="pre">3.0),</span> <span class="pre">'ori_method':</span> <span class="pre">None,</span> <span class="pre">'peak_prominence':</span> <span class="pre">10,</span> <span class="pre">'pos_method':</span> <span class="pre">None,</span> <span class="pre">'rampp_detect_only':</span> <span class="pre">None,</span> <span class="pre">'rampp_enforce_consistency':</span> <span class="pre">True,</span> <span class="pre">'rampp_ic_search_region_ms':</span> <span class="pre">(80,</span> <span class="pre">50),</span> <span class="pre">'rampp_min_vel_search_win_size_ms':</span> <span class="pre">100,</span> <span class="pre">'sampling_rate_hz':</span> <span class="pre">102.4,</span> <span class="pre">'sensor_channel_config':</span> <span class="pre">'gyr_ml',</span> <span class="pre">'steady_duration_s':</span> <span class="pre">0.0,</span> <span class="pre">'trim_ratio':</span> <span class="pre">0.0,</span> <span class="pre">'wearing_highpass_cutoff_hz':</span> <span class="pre">0.25,</span> <span class="pre">'wearing_highpass_order':</span> <span class="pre">4,</span> <span class="pre">'wearing_initial_window_min':</span> <span class="pre">0,</span> <span class="pre">'wearing_overlap':</span> <span class="pre">0.5,</span> <span class="pre">'wearing_smoothing_window_s':</span> <span class="pre">3,</span> <span class="pre">'wearing_window_size_min':</span> <span class="pre">30,</span> <span class="pre">'window_size_s':</span> <span class="pre">10.0}</span></em><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.DEFAULT_CONFIG" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.compute_recording_and_wearing_time">
+<span class="sig-name descname"><span class="pre">compute_recording_and_wearing_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.compute_recording_and_wearing_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.compute_recording_and_wearing_time" title="Link to this definition"></a></dt>
+<dd><p>Estimate total recording duration and sensor wearing time.</p>
+<p>This method identifies potential non-wearing periods from low-activity
+windows computed on accelerometer and gyroscope signals. Accelerometer
+channels are first high-pass filtered to remove the gravity component,
+while gyroscope channels are analyzed directly.</p>
+<p>For each sliding window, the vector norm of the available accelerometer
+and gyroscope channels is computed and smoothed. A window is classified as
+non-wearing when both signal norms remain below their respective activity
+thresholds.</p>
+<p>The method supports:
+- configurable sliding-window duration and overlap,
+- optional forced exclusion of an initial recording segment,
+- merging of overlapping or contiguous non-wearing windows,
+- estimation of the first valid wearing sample.</p>
+<p>Results are stored both as class attributes and in the processing log.</p>
+<section id="processing-steps">
+<h3>Processing steps<a class="headerlink" href="#processing-steps" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Compute total recording duration from signal length and sampling rate.</p></li>
+<li><p>High-pass filter accelerometer channels.</p></li>
+<li><p>Compute accelerometer and gyroscope vector norms.</p></li>
+<li><p>Smooth signal norms using a moving-average filter.</p></li>
+<li><p>Detect candidate non-wearing windows using sliding-window thresholding.</p></li>
+<li><p>Merge overlapping non-wearing windows.</p></li>
+<li><p>Estimate total wearing time and first valid wearing sample.</p></li>
+</ol>
+<p class="rubric">Notes</p>
+<p>Non-wearing detection is based on low signal activity and is intended for
+long real-world recordings. Thresholds and window parameters may require
+adjustment depending on sensor placement, acquisition system, and study
+population.</p>
+<dl class="field-list simple">
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing recording duration, wearing duration,
+non-wearing windows, and related summary metrics.</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+<dt class="field-odd">raises RuntimeError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If <cite>self.signal_filtered</cite> is not available.</p>
+</dd>
+<dt class="field-even">raises ValueError<span class="colon">:</span></dt>
+<dd class="field-even"><p>If the configured overlap is outside the valid range.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.filter_signal">
+<span class="sig-name descname"><span class="pre">filter_signal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.filter_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.filter_signal" title="Link to this definition"></a></dt>
+<dd><p>Apply low-pass Butterworth filtering to the available IMU channels.</p>
+<p>Gyroscope and accelerometer channels are filtered separately using the
+cutoff frequencies and filter orders defined in the pipeline configuration.</p>
+<p>The filtered signal is stored in <cite>self.signal_filtered</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The pipeline instance, allowing method chaining.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_gs_events">
+<span class="sig-name descname"><span class="pre">plot_gs_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gyr_ml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'filtered'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_removed_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_strides</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events_attr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'events'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">removed_events_attr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'removed_events'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strides_attr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'stride_list'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(12,</span> <span class="pre">6)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.plot_gs_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_gs_events" title="Link to this definition"></a></dt>
+<dd><p>Visualize IMU signals together with detected gait sequences, strides,
+gait events, and optionally removed events.</p>
+<p>The method generates one subplot for each sensor side and overlays
+gait-analysis outputs on the selected signal channel. Depending on the
+selected options, the figure can display:
+- detected gait sequences,
+- segmented strides,
+- valid gait events,
+- stride events removed during spatial-parameter cleanup.</p>
+<section id="visualization-layout">
+<h3>Visualization layout<a class="headerlink" href="#visualization-layout" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>Top subplot:</dt><dd><p>Left sensor signal.</p>
+</dd>
+<dt>Bottom subplot:</dt><dd><p>Right sensor signal.</p>
+</dd>
+</dl>
+</section>
+<section id="displayed-elements">
+<h3>Displayed elements<a class="headerlink" href="#displayed-elements" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>Signal:</dt><dd><p>Raw or filtered IMU signal.</p>
+</dd>
+<dt>Gait sequences:</dt><dd><p>Shaded light-blue regions corresponding to detected gait sequences.</p>
+</dd>
+<dt>Strides:</dt><dd><p>Shaded light-green regions corresponding to segmented strides.
+Stride start/end boundaries are displayed as vertical lines.</p>
+</dd>
+<dt>Valid events:</dt><dd><ul class="simple">
+<li><p><cite>pre_ic</cite>: green markers</p></li>
+<li><p><cite>ic</cite>: red markers</p></li>
+</ul>
+</dd>
+<dt>Removed events:</dt><dd><ul class="simple">
+<li><p>removed <cite>pre_ic</cite>: orange cross markers</p></li>
+<li><p>removed <cite>ic</cite>: purple cross markers</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">param channel<span class="colon">:</span></dt>
+<dd class="field-odd"><p>IMU channel to visualize.</p>
+</dd>
+<dt class="field-even">type channel<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, default=”gyr_ml”</p>
+</dd>
+<dt class="field-odd">param start<span class="colon">:</span></dt>
+<dd class="field-odd"><p>First sample index to display.</p>
+</dd>
+<dt class="field-even">type start<span class="colon">:</span></dt>
+<dd class="field-even"><p>int, optional</p>
+</dd>
+<dt class="field-odd">param end<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Last sample index to display.</p>
+</dd>
+<dt class="field-even">type end<span class="colon">:</span></dt>
+<dd class="field-even"><p>int, optional</p>
+</dd>
+<dt class="field-odd">param signal_type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Signal source used for visualization.</p>
+</dd>
+<dt class="field-even">type signal_type<span class="colon">:</span></dt>
+<dd class="field-even"><p>{“filtered”, “raw”}, default=”filtered”</p>
+</dd>
+<dt class="field-odd">param show_events<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If True, overlay valid gait events.</p>
+</dd>
+<dt class="field-even">type show_events<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool, default=True</p>
+</dd>
+<dt class="field-odd">param show_removed_events<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If True, overlay events removed during spatial-parameter cleanup.</p>
+</dd>
+<dt class="field-even">type show_removed_events<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool, default=False</p>
+</dd>
+<dt class="field-odd">param show_strides<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If True, display stride segmentation instead of gait-sequence regions.</p>
+</dd>
+<dt class="field-even">type show_strides<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool, default=False</p>
+</dd>
+<dt class="field-odd">param events_attr<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Attribute name containing valid gait events.</p>
+</dd>
+<dt class="field-even">type events_attr<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, default=”events”</p>
+</dd>
+<dt class="field-odd">param removed_events_attr<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Attribute name containing removed gait events.</p>
+</dd>
+<dt class="field-even">type removed_events_attr<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, default=”removed_events”</p>
+</dd>
+<dt class="field-odd">param strides_attr<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Attribute name containing segmented strides.</p>
+</dd>
+<dt class="field-even">type strides_attr<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, default=”stride_list”</p>
+</dd>
+<dt class="field-odd">param figsize<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Figure size.</p>
+</dd>
+<dt class="field-even">type figsize<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple, default=(12, 6)</p>
+</dd>
+<dt class="field-odd">param save_path<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path where the figure should be saved.</p>
+</dd>
+<dt class="field-even">type save_path<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, optional</p>
+</dd>
+<dt class="field-odd">raises ValueError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If required signals or gait-analysis outputs are missing.</p>
+</dd>
+<dt class="field-even">raises KeyError<span class="colon">:</span></dt>
+<dd class="field-even"><p>If requested channels or sensor sides are unavailable.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This visualization method is mainly intended for quality control and
+debugging of gait detection, stride segmentation, and event detection
+on real-world IMU recordings.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_raw_filtered_channel">
+<span class="sig-name descname"><span class="pre">plot_raw_filtered_channel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gyr_ml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(12,</span> <span class="pre">6)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.plot_raw_filtered_channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_raw_filtered_channel" title="Link to this definition"></a></dt>
+<dd><p>Plot raw and filtered signals for one IMU channel on both sensors.</p>
+<p>The method creates two subplots:
+one for the left sensor and one for the right sensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>channel</strong> (<em>str</em><em>, </em><em>default=&quot;gyr_ml&quot;</em>) – IMU channel to plot.</p></li>
+<li><p><strong>start</strong> (<em>int</em><em>, </em><em>optional</em>) – First sample index to include.</p></li>
+<li><p><strong>end</strong> (<em>int</em><em>, </em><em>optional</em>) – Last sample index to include.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em><em>, </em><em>default=</em><em>(</em><em>12</em><em>, </em><em>6</em><em>)</em>) – Figure size.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path where the figure is saved.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>default=True</em>) – If True, display the figure. If False, close it after saving.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_signal_with_non_wearing">
+<span class="sig-name descname"><span class="pre">plot_signal_with_non_wearing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sensor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'left_sensor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'gyr_ml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'filtered'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(16,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.plot_signal_with_non_wearing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.plot_signal_with_non_wearing" title="Link to this definition"></a></dt>
+<dd><p>Plot one selected signal channel for one selected sensor, highlighting
+non-wearing windows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> (<em>str</em><em>, </em><em>default=&quot;left_sensor&quot;</em>) – Sensor side to plot. Must be “left_sensor” or “right_sensor”.</p></li>
+<li><p><strong>channel</strong> (<em>str</em><em>, </em><em>default=&quot;gyr_ml&quot;</em>) – Signal channel to plot, e.g. “gyr_ml”, “acc_ml”, “gyr_pa”, “acc_si”.</p></li>
+<li><p><strong>signal_type</strong> (<em>str</em><em>, </em><em>default=&quot;filtered&quot;</em>) – Which signal dataframe to use: “filtered” or “raw”.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em><em>, </em><em>default=</em><em>(</em><em>16</em><em>, </em><em>5</em><em>)</em>) – Figure size.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – If provided, save the figure to this path.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>default=True</em>) – If True, display the figure. If False, close it after creation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.run_gaitmap_pipeline">
+<span class="sig-name descname"><span class="pre">run_gaitmap_pipeline</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.run_gaitmap_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.run_gaitmap_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Run the core gaitmap-based gait analysis pipeline.</p>
+<blockquote>
+<div><p>This method applies the main processing steps required to extract
+stride-level gait information from filtered IMU signals. It uses gaitmap
+algorithms for gait sequence detection, stride segmentation, gait event
+detection, trajectory reconstruction, and temporal/spatial parameter
+calculation.</p>
+<p>For trajectory reconstruction, this pipeline includes optional preprocessing
+adjustments designed for real-world recordings: a configurable static padding
+period can be added before the signal, gait sequence and stride indices are
+shifted accordingly, and gait sequence boundaries can be trimmed before
+trajectory estimation. These steps are intended to improve robustness when
+working with noisy free-living data.</p>
+</div></blockquote>
+<p>The method expects <cite>self.signal_filtered</cite> to be available. Therefore,
+<cite>filter_signal()</cite> must be called before this method.</p>
+<section id="id1">
+<h3>Processing steps<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Detect gait sequences independently for the left and right sensors.</p></li>
+<li><p>Segment strides within the detected gait sequences using dynamic time
+warping.</p></li>
+<li><p>Detect gait events, including initial contact, terminal contact,
+minimum velocity, and previous initial contact.</p></li>
+<li><p>Reconstruct stride-level orientations and positions.</p></li>
+<li><p>Compute temporal gait parameters.</p></li>
+<li><p>Compute spatial gait parameters.</p></li>
+<li><p>If spatial parameter calculation fails because some stride IDs are
+missing from the reconstructed trajectories, iteratively remove only
+those problematic stride IDs from the spatial-parameter inputs.</p></li>
+</ol>
+<p class="rubric">Notes</p>
+<p>The original gait event tables stored in <cite>self.events</cite> are preserved.
+Cleanup for spatial-parameter calculation is applied only to
+<cite>self.events_clean</cite>, <cite>self.positions</cite>, and <cite>self.orientations</cite>.</p>
+<p>Results are stored as attributes of the class.</p>
+</section>
+<section id="main-outputs">
+<h3>Main outputs<a class="headerlink" href="#main-outputs" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>self.gs<span class="classifier">dict</span></dt><dd><p>Detected gait sequences for left and right sensors.</p>
+</dd>
+<dt>self.stride_list<span class="classifier">dict</span></dt><dd><p>Segmented strides for left and right sensors.</p>
+</dd>
+<dt>self.events<span class="classifier">dict</span></dt><dd><p>Detected gait events for left and right sensors.</p>
+</dd>
+<dt>self.events_clean<span class="classifier">dict</span></dt><dd><p>Copy of the gait events after removing only the stride IDs that are
+incompatible with spatial-parameter calculation.</p>
+</dd>
+<dt>self.orientations<span class="classifier">dict</span></dt><dd><p>Reconstructed stride-level orientations.</p>
+</dd>
+<dt>self.positions<span class="classifier">dict</span></dt><dd><p>Reconstructed stride-level positions.</p>
+</dd>
+<dt>self.temporal_left, self.temporal_right<span class="classifier">pandas.DataFrame or None</span></dt><dd><p>Temporal gait parameters for the left and right sensors.</p>
+</dd>
+<dt>self.spatial_left, self.spatial_right<span class="classifier">pandas.DataFrame or None</span></dt><dd><p>Spatial gait parameters for the left and right sensors.</p>
+</dd>
+<dt>self.removed_events<span class="classifier">dict</span></dt><dd><p>Events removed only from the spatial-parameter calculation workflow.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">raises RuntimeError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If <cite>self.signal_filtered</cite> is missing.</p>
+</dd>
+<dt class="field-even">raises Exception<span class="colon">:</span></dt>
+<dd class="field-even"><p>Re-raises unexpected errors from the global pipeline execution after
+    logging them.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.save_outputs">
+<span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dmos_pipeline/gaitmap_pipeline.html#GaitMapPipeline.save_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.gaitmap_pipeline.GaitMapPipeline.save_outputs" title="Link to this definition"></a></dt>
+<dd><p>Save pipeline outputs to disk.</p>
+<p>Outputs are organized using the following folder structure:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>project_folder /</dt><dd><dl class="simple">
+<dt>patient_id /</dt><dd><dl class="simple">
+<dt>recording_date /</dt><dd><p>session_id /</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<p>The method exports:
+- processing log (<cite>.json</cite>),
+- gait events (<cite>.csv</cite>),
+- combined temporal and spatial gait parameters (<cite>.csv</cite>).</p>
+<p>Metadata columns (<cite>patient_id</cite>, <cite>recording_date</cite>, <cite>session_id</cite>) are
+automatically added to all exported tables.</p>
+<p>Temporal and spatial parameter tables from the left and right sensors are
+merged into a single stride-level parameter table before export.</p>
+<section id="id2">
+<h3>Processing steps<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Validate recording metadata.</p></li>
+<li><p>Create the output directory structure.</p></li>
+<li><p>Save the processing log as JSON.</p></li>
+<li><p>Combine and export gait-event tables.</p></li>
+<li><p>Combine temporal and spatial parameter tables.</p></li>
+<li><p>Flatten potential MultiIndex column names.</p></li>
+<li><p>Export the final stride-level parameter table.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">param project_folder<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Root directory where outputs will be saved.</p>
+</dd>
+<dt class="field-even">type project_folder<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing the paths of the saved files.</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+<dt class="field-odd">raises ValueError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If <cite>patient_id</cite>, <cite>session_id</cite>, or <cite>recording_date</cite> are missing.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="qualitycheck">
+<h2>QualityCheck<a class="headerlink" href="#qualitycheck" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dmos_pipeline.quality_check.</span></span><span class="sig-name descname"><span class="pre">QualityCheck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_filtered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Quality-control pipeline for gait events and stride-level gait parameters.</p>
+<p>This class is intended to be run after the gaitmap-based processing
+pipeline. It loads the exported IMU signal, gait-event table, and
+stride-level parameter table, then adds quality-control labels without
+removing any rows.</p>
+<p>Two levels of quality control are applied:</p>
+<ol class="arabic">
+<li><p>Event-level quality check
+Initial-contact events are checked using the filtered gyroscope signal.
+For each event, the signal value is extracted at the detected initial
+contact sample from the corresponding foot sensor:</p>
+<ul class="simple">
+<li><p>left foot events are checked on <cite>left_sensor</cite></p></li>
+<li><p>right foot events are checked on <cite>right_sensor</cite></p></li>
+</ul>
+<p>By default, the selected channel is <cite>gyr_ml</cite>. An event fails the check
+when the filtered gyroscope value at initial contact is greater than the
+configured threshold.</p>
+<p>The following columns are added to the events table:</p>
+<ul class="simple">
+<li><p><cite>quality_check(IC&gt;0)</cite></p></li>
+<li><p><cite>notes</cite></p></li>
+</ul>
+<p>By default:</p>
+<ul class="simple">
+<li><p><cite>quality_check(IC&gt;0) = False</cite> if filtered <cite>gyr_ml</cite> at IC &gt; 0</p></li>
+<li><p><cite>quality_check(IC&gt;0) = True</cite> otherwise</p></li>
+</ul>
+</li>
+<li><p>Parameter-level quality check
+Stride-level parameters are checked using configurable plausibility
+rules. The default rules include:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>turning angle:</dt><dd><p>the row fails if <cite>25 &lt;= abs(turning angle [deg]) &lt;= 90</cite></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>parameter outliers:</dt><dd><p>the row fails if at least <cite>n_parameter_violations</cite> parameters fall
+outside their configured ranges.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The default parameter ranges are:</p>
+<ul class="simple">
+<li><p><cite>stride time [s]</cite>: 0.2 to 3.0</p></li>
+<li><p><cite>gait velocity [m/s]</cite>: 0.2 to 2.0</p></li>
+<li><p><cite>stride length [m]</cite>: 0.10 to 1.5</p></li>
+</ul>
+<p>The following columns are added to the parameters table:</p>
+<ul class="simple">
+<li><p><cite>quality_check</cite></p></li>
+<li><p><cite>notes</cite></p></li>
+</ul>
+</li>
+</ol>
+<p>The labelled events and parameters are saved back to their original CSV
+files, and the existing gaitmap processing log is updated with a
+<cite>quality_check_summary</cite>.</p>
+<p class="rubric">Notes</p>
+<p>This class labels data quality but does not remove events or parameter
+rows. Downstream processing can decide whether to exclude failed rows.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.DEFAULT_CONFIG">
+<span class="sig-name descname"><span class="pre">DEFAULT_CONFIG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'apply_events_ic_check':</span> <span class="pre">True,</span> <span class="pre">'apply_parameter_outlier_check':</span> <span class="pre">True,</span> <span class="pre">'apply_turning_angle_check':</span> <span class="pre">True,</span> <span class="pre">'channel':</span> <span class="pre">'gyr_ml',</span> <span class="pre">'cutoff_freq_gyr':</span> <span class="pre">5.0,</span> <span class="pre">'events_quality_col':</span> <span class="pre">'quality_check(IC&gt;0)',</span> <span class="pre">'filter_order_gyr':</span> <span class="pre">4,</span> <span class="pre">'ic_threshold':</span> <span class="pre">0.0,</span> <span class="pre">'n_parameter_violations':</span> <span class="pre">2,</span> <span class="pre">'notes_col':</span> <span class="pre">'notes',</span> <span class="pre">'parameter_rules':</span> <span class="pre">{'gait</span> <span class="pre">velocity</span> <span class="pre">[m/s]':</span> <span class="pre">(0.2,</span> <span class="pre">2.0),</span> <span class="pre">'stride</span> <span class="pre">length</span> <span class="pre">[m]':</span> <span class="pre">(0.1,</span> <span class="pre">1.5),</span> <span class="pre">'stride</span> <span class="pre">time</span> <span class="pre">[s]':</span> <span class="pre">(0.2,</span> <span class="pre">3.0)},</span> <span class="pre">'sampling_rate_hz':</span> <span class="pre">102.4,</span> <span class="pre">'turning_angle_abs_range':</span> <span class="pre">(25.0,</span> <span class="pre">90.0)}</span></em><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.DEFAULT_CONFIG" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.build_quality_check_summary">
+<span class="sig-name descname"><span class="pre">build_quality_check_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.build_quality_check_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.build_quality_check_summary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.butter_lowpass_filter">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">butter_lowpass_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.butter_lowpass_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.butter_lowpass_filter" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.drop_unnamed_columns">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">drop_unnamed_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.drop_unnamed_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.drop_unnamed_columns" title="Link to this definition"></a></dt>
+<dd><p>Remove unnamed columns created during CSV import.</p>
+<p>This helper supports both regular column indexes and MultiIndex columns.
+It is mainly used to remove index columns accidentally saved by pandas,
+such as <cite>Unnamed: 0</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pandas.DataFrame</em>) – Input dataframe.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dataframe without unnamed columns.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.filter_signal">
+<span class="sig-name descname"><span class="pre">filter_signal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.filter_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.filter_signal" title="Link to this definition"></a></dt>
+<dd><p>Prepare left and right filtered signals for event-level quality control.</p>
+<p>If a filtered signal dataframe was provided, the selected channel is
+extracted directly. Otherwise, the raw signal is filtered first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.format_recording_date">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">format_recording_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recording_date</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.format_recording_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.format_recording_date" title="Link to this definition"></a></dt>
+<dd><p>Convert a recording date to YYYY-MM-DD format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>recording_date</strong> – Input recording date. Any value accepted by <cite>pandas.to_datetime</cite>
+can be used.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Formatted recording date.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.get_ic_signal_value">
+<span class="sig-name descname"><span class="pre">get_ic_signal_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">foot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ic_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.get_ic_signal_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.get_ic_signal_value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.get_signal_column">
+<span class="sig-name descname"><span class="pre">get_signal_column</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">side</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.get_signal_column"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.get_signal_column" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.label_events_quality_check">
+<span class="sig-name descname"><span class="pre">label_events_quality_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.label_events_quality_check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.label_events_quality_check" title="Link to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Add:</dt><dd><p>quality_check(IC&gt;0)
+notes</p>
+</dd>
+</dl>
+<p>True means the event passed.
+False means the event failed because filtered gyr_ml at IC &gt; threshold.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.label_parameters_quality_check">
+<span class="sig-name descname"><span class="pre">label_parameters_quality_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.label_parameters_quality_check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.label_parameters_quality_check" title="Link to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Add:</dt><dd><p>quality_check
+notes</p>
+</dd>
+</dl>
+<p>True means the parameter row passed.
+False means the parameter row failed at least one selected rule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.load_events">
+<span class="sig-name descname"><span class="pre">load_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.load_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.load_events" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.load_inputs">
+<span class="sig-name descname"><span class="pre">load_inputs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.load_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.load_inputs" title="Link to this definition"></a></dt>
+<dd><p>Load all input files required by the quality-check pipeline.</p>
+<p>This method loads:
+- the raw IMU signal file,
+- the gait-event CSV file,
+- the stride-level parameter CSV file.</p>
+<p>The loaded data are stored as class attributes:</p>
+<ul class="simple">
+<li><p><cite>self.signal_raw</cite></p></li>
+<li><p><cite>self.events</cite></p></li>
+<li><p><cite>self.parameters</cite></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The quality-check instance, allowing method chaining.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.load_parameters">
+<span class="sig-name descname"><span class="pre">load_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.load_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.load_parameters" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.load_signal">
+<span class="sig-name descname"><span class="pre">load_signal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.load_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.load_signal" title="Link to this definition"></a></dt>
+<dd><p>Load the IMU signal used for event-level quality control.</p>
+<p>If a filtered signal dataframe was provided at initialization, it is used
+directly. Otherwise, the signal is loaded from <cite>signal_path</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.run" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.save_outputs">
+<span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.save_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.save_outputs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dmos_pipeline.quality_check.QualityCheck.update_log_file">
+<span class="sig-name descname"><span class="pre">update_log_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dmos_pipeline/quality_check.html#QualityCheck.update_log_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dmos_pipeline.quality_check.QualityCheck.update_log_file" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="DMOs Pipeline documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
