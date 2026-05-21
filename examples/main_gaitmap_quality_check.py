@@ -12,9 +12,16 @@ This script:
 5. Updates the exported CSV files and the processing log.
 """
 
-from pathlib import Path
-import re
+# -*- coding: utf-8 -*-
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+import os
+import re
 import pandas as pd
 
 from dmos_pipeline import GaitMapPipeline, QualityCheck, WBpipeline

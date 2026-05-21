@@ -80,8 +80,7 @@ class WBpipeline:
         self.wb_pause_s_threshold = self.config["wb_pause_s_threshold"]
         self.threshold_one_side = self.config["threshold_one_side"]
         self.threshold_two_sides = self.config["threshold_two_sides"]
-        self.pause_plot_threshold_min = self.config["pause_plot_threshold_min"]
-        self.save_segments_images = self.config["save_segments_images"]
+
         self.use_only_quality_checked_events = self.config["use_only_quality_checked_events"]
         self.event_quality_column = self.config["event_quality_column"]
 
@@ -172,11 +171,9 @@ class WBpipeline:
         if config["threshold_two_sides"] <= 0:
             raise ValueError("threshold_two_sides must be greater than 0.")
 
-        if config["pause_plot_threshold_min"] < 0:
-            raise ValueError("pause_plot_threshold_min cannot be negative.")
+        
 
-        if not isinstance(config["save_segments_images"], bool):
-            raise ValueError("save_segments_images must be True or False.")
+        
         if not isinstance(config["use_only_quality_checked_events"], bool):
             raise ValueError("use_only_quality_checked_events must be True or False.")
         
@@ -1303,34 +1300,34 @@ class WBpipeline:
     
         return segs
     def adjust_wb_boundaries(self, segs: pd.DataFrame) -> pd.DataFrame:
-     """
-        Adjust candidate walking-bout boundaries using gait-event timing.
-    
-        Pause detection creates candidate segment boundaries from sample-wise pause
-        flags. These boundaries are pause-based and may not coincide exactly with
-        detected gait events.
-    
-        For each candidate segment, this method updates:
-    
-        - `start` to the earliest `pre_ic` inside the segment
-        - `end` to the latest `ic` inside the segment
-    
-        The original pause-based boundaries are preserved in:
-    
-        - `start_original`
-        - `end_original`
-    
-        Parameters
-        ----------
-        segs : pandas.DataFrame
-            Candidate segment table produced by `detect_wb_pauses()`.
-    
-        Returns
-        -------
-        pandas.DataFrame
-            Copy of the input dataframe with adjusted boundaries and updated
-            duration.
         """
+           Adjust candidate walking-bout boundaries using gait-event timing.
+           
+           Pause detection creates candidate segment boundaries from sample-wise pause
+           flags. These boundaries are pause-based and may not coincide exactly with
+           detected gait events.
+           
+           For each candidate segment, this method updates:
+           
+           - `start` to the earliest `pre_ic` inside the segment
+           - `end` to the latest `ic` inside the segment
+           
+           The original pause-based boundaries are preserved in:
+           
+           - `start_original`
+           - `end_original`
+           
+           Parameters
+           ----------
+           segs : pandas.DataFrame
+               Candidate segment table produced by `detect_wb_pauses()`.
+           
+           Returns
+           -------
+           pandas.DataFrame
+               Copy of the input dataframe with adjusted boundaries and updated
+               duration.
+           """
         segs = segs.copy()
     
         if segs.empty:
@@ -1391,7 +1388,7 @@ class WBpipeline:
         segs["duration_s"] = (segs["end"] - segs["start"]) / self.fs
     
         return segs
-    def WB_extraction(self):
+    def extract_walking_bouts(self):
         """
         Identify valid walking bouts from non-pause segments.
     
@@ -1420,7 +1417,7 @@ class WBpipeline:
         """
     
         if not hasattr(self, "signal_segments") or self.signal_segments is None:
-            raise RuntimeError("Run detect_wb_pauses() before WB_extraction().")
+            raise RuntimeError("Run detect_wb_pauses() before extract_walking_bouts().")
     
         segs = self.signal_segments.copy()
     
@@ -1429,7 +1426,7 @@ class WBpipeline:
             self.wb = pd.DataFrame(columns=list(segs.columns) + ["WB_id"])
     
             self.log["events"].append(
-                "WB_extraction: no signal segments available."
+                "extract_walking_bouts: no signal segments available."
             )
     
             return self
@@ -1459,7 +1456,7 @@ class WBpipeline:
         n_not_valid = int((segs["label_WB"] == "not_validWB").sum())
     
         self.log["events"].append(
-            f"WB_extraction: {n_valid} validWB, {n_not_valid} not_validWB."
+            f"extract_walking_bouts: {n_valid} validWB, {n_not_valid} not_validWB."
         )
     
         return self
@@ -1567,48 +1564,3 @@ class WBpipeline:
         self.log["events"].append("WB outputs saved.")
     
         return saved_paths
-#%% DEBUG MAIN
-
-
-if __name__ == "__main__":
-
-    session_folder = (
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3"
-    )
-
-    user_config = {
-        "wb_pause_s_threshold": 3.0,
-
-        # ---- Mobilise-D WB definition ----
-        "threshold_one_side": 3,
-        "threshold_two_sides": 5,
-        
-        # ---- Event quality filtering ----
-    "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC>0)",
-
-        # ---- Plotting ----
-        "pause_plot_threshold_min": 10.0,
-        "save_segments_images": True,
-    }
-
-    pipeline = WBpipeline(
-        session_folder=session_folder,
-        config=user_config,
-    )
-
-    # This assumes your class already loads events into self.events.
-    # If not, run your load_events/load_inputs method before this line.
-    pipeline.load_events()
-    pipeline.detect_wb_pauses()
-    pipeline.WB_extraction()
-    saved_paths = pipeline.save_outputs()
-
-    df_pause = pipeline.df_pause
-    df_break = pipeline.df_break
-    signal_segments = pipeline.signal_segments
-    wb = pipeline.wb
-    segments=pipeline.signal_segments
-    saved_paths = pipeline.save_outputs()
-
-    print(saved_paths)
