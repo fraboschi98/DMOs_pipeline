@@ -340,6 +340,7 @@ class GaitMapPipeline:
     
             
             raise
+
     def plot_raw_filtered_channel(
         self,
         channel: str = "gyr_ml",
@@ -349,26 +350,32 @@ class GaitMapPipeline:
         save_path: Optional[str] = None,
     ):
         """
-        Plot raw and filtered signals for the same channel on both sensors.
+        Plot raw and filtered signals for one IMU channel on both sensors.
     
-        Layout:
-        - top subplot: left_sensor (raw + filtered)
-        - bottom subplot: right_sensor (raw + filtered)
+        The method creates two subplots:
+        one for the left sensor and one for the right sensor.
     
         Parameters
         ----------
-        channel : str
-            Channel to plot, e.g. "gyr_ml".
+        channel : str, default="gyr_ml"
+            IMU channel to plot.
+    
         start : int, optional
-            Start sample index.
+            First sample index to include.
+    
         end : int, optional
-            End sample index.
-        
+            Last sample index to include.
+    
         figsize : tuple, default=(12, 6)
             Figure size.
+    
         save_path : str, optional
-            If provided, save figure to this path.
+            Path where the figure is saved.
+    
+        show : bool, default=True
+            If True, display the figure. If False, close it after saving.
         """
+
     
         if self.signal_raw is None:
             raise ValueError("self.signal_raw is None.")
@@ -424,6 +431,7 @@ class GaitMapPipeline:
             plt.savefig(save_path, dpi=300, bbox_inches="tight")
     
         plt.show()
+
     def _compute_trajectories(self, df, fs, gs_list, stride_list):
         """
         Perform trajectory reconstruction with optional padding and trimming.
@@ -2117,7 +2125,7 @@ pipeline = GaitMapPipeline(
 pipeline.filter_signal()
 
 #Step 2.1 Plot Filtering
-#pipeline.plot_raw_filtered_channel(channel="gyr_ml")
+pipeline.plot_raw_filtered_channel(channel="gyr_ml")
 
 #Step 3 Gaitmap
 pipeline.run_gaitmap_pipeline()
