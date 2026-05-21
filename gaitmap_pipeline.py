@@ -2317,108 +2317,108 @@ class GaitMapPipeline:
 #%% DEBUG MAIN
 
 
-#Parse function to extract filename pattern, to be adpated
-def parse_filename_metadata(path):
-    fn = Path(path).name
+# #Parse function to extract filename pattern, to be adpated
+# def parse_filename_metadata(path):
+#     fn = Path(path).name
     
-    # pattern: PAT404_xxxx_2023-07-11_gaitMAP_bf_all.csv
-    pattern = r"^(PAT\d+)_([A-Za-z0-9_]+)_(\d{4}-\d{2}-\d{2})_gaitMAP"
-    match = re.search(pattern, fn)
+#     # pattern: PAT404_xxxx_2023-07-11_gaitMAP_bf_all.csv
+#     pattern = r"^(PAT\d+)_([A-Za-z0-9_]+)_(\d{4}-\d{2}-\d{2})_gaitMAP"
+#     match = re.search(pattern, fn)
     
-    if not match:
-        raise ValueError(f"Filename does not match expected pattern: {fn}")
+#     if not match:
+#         raise ValueError(f"Filename does not match expected pattern: {fn}")
     
-    patient_id = match.group(1)
-    session_id = match.group(2)
-    date_str = match.group(3)
+#     patient_id = match.group(1)
+#     session_id = match.group(2)
+#     date_str = match.group(3)
     
-    return patient_id, session_id, date_str
+#     return patient_id, session_id, date_str
 
-# Paths
-path = r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3\PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv"
-patient_id, session_id, recording_date = parse_filename_metadata(path)
-output_root = r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova"
+# # Paths
+# path = r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova\PAT401\2023-07-10\week_3\PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv"
+# patient_id, session_id, recording_date = parse_filename_metadata(path)
+# output_root = r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova"
 
-# Loadings
-df_raw = pd.read_csv(path, header=[0, 1], index_col=0)
-df_raw = df_raw.reset_index(drop=True)
+# # Loadings
+# df_raw = pd.read_csv(path, header=[0, 1], index_col=0)
+# df_raw = df_raw.reset_index(drop=True)
 
 
-# Optional user config
-user_config = {
-    "sampling_rate_hz": 102.4,
+# # Optional user config
+# user_config = {
+#     "sampling_rate_hz": 102.4,
     
-}
+# }
 
 
-# Pipeline
-#Step 1 Initialisation
-pipeline = GaitMapPipeline(
-    signal_raw=df_raw,
-    config=user_config,
-    patient_id=patient_id,
-    session_id=session_id,
-    recording_date=recording_date,
-    output_root=output_root
-)    
+# # Pipeline
+# #Step 1 Initialisation
+# pipeline = GaitMapPipeline(
+#     signal_raw=df_raw,
+#     config=user_config,
+#     patient_id=patient_id,
+#     session_id=session_id,
+#     recording_date=recording_date,
+#     output_root=output_root
+# )    
 
 
 
-# Step 2 Filtering
-pipeline.filter_signal()
+# # Step 2 Filtering
+# pipeline.filter_signal()
 
-#Step 2.1 Plot Filtering
-pipeline.plot_raw_filtered_channel(channel="gyr_ml")
+# #Step 2.1 Plot Filtering
+# pipeline.plot_raw_filtered_channel(channel="gyr_ml")
 
-#Step 3 Gaitmap
-pipeline.run_gaitmap_pipeline()
+# #Step 3 Gaitmap
+# pipeline.run_gaitmap_pipeline()
 
-#Step 3.1 gait Sequences
-gs=pipeline.gs
-#pipeline.plot_gs(channel="gyr_ml")
+# #Step 3.1 gait Sequences
+# gs=pipeline.gs
+# #pipeline.plot_gs(channel="gyr_ml")
 
-#Step 3.2 Strides Segmentation
-stride_list=pipeline.stride_list
+# #Step 3.2 Strides Segmentation
+# stride_list=pipeline.stride_list
 
-#Step 3.3 Events detection
-events_list=pipeline.events
+# #Step 3.3 Events detection
+# events_list=pipeline.events
 
-#Step 3.4 Trajectories
-log=pipeline.log
+# #Step 3.4 Trajectories
+# log=pipeline.log
 
-#Step 3.5 Temporal Parameters
-temporal_l=pipeline.temporal_left
-temporal_r=pipeline.temporal_right
-#Step 3.6 Spatial Parameters
-spatial_l=pipeline.spatial_left
-spatial_r=pipeline.spatial_right
-removed_events = pipeline.removed_events
+# #Step 3.5 Temporal Parameters
+# temporal_l=pipeline.temporal_left
+# temporal_r=pipeline.temporal_right
+# #Step 3.6 Spatial Parameters
+# spatial_l=pipeline.spatial_left
+# spatial_r=pipeline.spatial_right
+# removed_events = pipeline.removed_events
 
-events_cleaned=pipeline.events_clean
-# pipeline.plot_gs_events(
-#     channel="gyr_ml",
-#     show_events=True,
-#     show_removed_events=False,
-#     show_strides=True,
+# events_cleaned=pipeline.events_clean
+# # pipeline.plot_gs_events(
+# #     channel="gyr_ml",
+# #     show_events=True,
+# #     show_removed_events=False,
+# #     show_strides=True,
+# # )
+# # pipeline.plot_gs_events(
+# #     channel="gyr_ml",
+# #     show_events=True,
+# #     show_removed_events=True,
+# #     show_strides=True,
+# # )
+
+# pipeline.compute_recording_and_wearing_time()
+
+
+# # pipeline.plot_signal_with_non_wearing(
+# #     sensor="left_sensor",
+# #     channel="gyr_ml",
+# #     signal_type="filtered",
+# # )
+
+# saved_paths = pipeline.save_outputs(
+#     project_folder=r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova"
 # )
-# pipeline.plot_gs_events(
-#     channel="gyr_ml",
-#     show_events=True,
-#     show_removed_events=True,
-#     show_strides=True,
-# )
 
-pipeline.compute_recording_and_wearing_time()
-
-
-# pipeline.plot_signal_with_non_wearing(
-#     sensor="left_sensor",
-#     channel="gyr_ml",
-#     signal_type="filtered",
-# )
-
-saved_paths = pipeline.save_outputs(
-    project_folder=r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova"
-)
-
-print(saved_paths)
+# print(saved_paths)
