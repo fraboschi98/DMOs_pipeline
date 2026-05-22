@@ -150,7 +150,7 @@ def main():
     "threshold_one_side": 3,
     "threshold_two_sides": 5,
     "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC>0)",
+    "event_quality_column": "quality_check(IC<0)",
 }
     session_folder = saved_paths["events"].parent
     
@@ -170,7 +170,7 @@ def main():
     "threshold_one_side": 3,
     "threshold_two_sides": 5,
     "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC>0)",
+    "event_quality_column": "quality_check(IC<0)",
 }
 
 

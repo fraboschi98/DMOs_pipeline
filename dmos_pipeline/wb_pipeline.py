@@ -18,7 +18,7 @@ class WBpipeline:
     """
     Walking-bout extraction pipeline based on gait events.
 
-    This class is intended to be run after `GaitMapPipeline` and, optionally,
+    This class is intended to be run after `` and, optionally,
     after `QualityCheck`. It reads the session-level outputs produced by the
     previous processing steps, including the gait-event CSV and processing log,
     and uses them to identify candidate walking bouts.
@@ -84,17 +84,17 @@ class WBpipeline:
         self.use_only_quality_checked_events = self.config["use_only_quality_checked_events"]
         self.event_quality_column = self.config["event_quality_column"]
 
-        # Input log file from GaitMapPipeline
+        # Input log file 
         self.source_log_path = None
         self.source_log = None
 
-        # Metadata read from GaitMapPipeline log
+        # Metadata read  log
         self.patient_id = None
         self.recording_date = None
         self.session_id = None
         self.fs = None
         
-        # Input event file from GaitMapPipeline
+        # Input event file 
         self.events_path = None
         self.events = None
         self.events_left_labeled = None
@@ -253,7 +253,7 @@ class WBpipeline:
     
     def _find_source_log(self) -> None:
         """
-        Find the log JSON produced by GaitMapPipeline inside the session folder.
+        Find the log JSON produced by  inside the session folder.
         """
 
         log_candidates = list(self.session_folder.glob("*_log.json"))
@@ -266,7 +266,7 @@ class WBpipeline:
 
         if not log_candidates:
             raise FileNotFoundError(
-                f"No GaitMapPipeline log file found in: {self.session_folder}"
+                f"No  log file found in: {self.session_folder}"
             )
 
         if len(log_candidates) > 1:
@@ -282,7 +282,7 @@ class WBpipeline:
         """
         Locate the source processing log in the session folder.
         
-        The source log is the JSON file produced by `GaitMapPipeline`. It is used
+        The source log is the JSON file produced by ``. It is used
         to retrieve recording metadata and the sampling frequency needed for
         walking-bout extraction.
         
@@ -478,7 +478,7 @@ class WBpipeline:
     
     def _find_events_file(self) -> None:
         """
-        Find the events CSV produced by GaitMapPipeline inside the session folder.
+        Find the events CSV  inside the session folder.
         """
     
         if self.patient_id is None or self.recording_date is None or self.session_id is None:
@@ -562,7 +562,7 @@ class WBpipeline:
     
     def load_events(self):
         """
-        Load the GaitMapPipeline events CSV.
+        Load   events CSV.
     
         If configured, keep only events with quality_check == True.
         """
@@ -1056,7 +1056,7 @@ class WBpipeline:
             Combined event table loaded from the saved events CSV.
     
         self.fs
-            Sampling frequency read from the previous GaitMapPipeline log.
+            Sampling frequency read from the previous  log.
     
         self.wb_pause_s_threshold
             Minimum duration in seconds for a simultaneous no-event interval to be
