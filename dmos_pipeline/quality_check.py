@@ -989,7 +989,7 @@ class QualityCheck:
         """
         Propagate failed event-level QC to stride-level parameters.
         
-        If an event has quality_check(IC>0) == False, then the parameter row
+        If an event has quality_check(IC<0) == False, then the parameter row
         with the same s_id is also marked as quality_check == False.
         
         This does not remove rows. It only updates:
