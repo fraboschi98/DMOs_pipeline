@@ -61,7 +61,7 @@ class WBpipeline:
     
         # ---- Event quality filtering ----
         "use_only_quality_checked_events": True,
-        "event_quality_column": "quality_check(IC>0)",
+        "event_quality_column": "quality_check(IC<0)",
     }
     def __init__(
         self,
@@ -250,6 +250,7 @@ class WBpipeline:
         )
     
         return self
+    
     def _find_source_log(self) -> None:
         """
         Find the log JSON produced by GaitMapPipeline inside the session folder.

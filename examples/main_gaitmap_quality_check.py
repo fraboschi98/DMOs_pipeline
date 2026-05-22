@@ -83,7 +83,7 @@ def main():
         "cutoff_freq_gyr": 5.0,
         "filter_order_gyr": 4,
         "ic_threshold": 0.0,
-        "events_quality_col": "quality_check(IC>0)",
+        "events_quality_col": "quality_check(IC<0)",
         "notes_col": "notes",
         "turning_angle_abs_range": (25.0, 90.0),
         "parameter_rules": {
@@ -142,36 +142,36 @@ def main():
 
     
 
-    # ---------------------------------------------------------------------
-    # Step 3: walking-bout extraction
-    # ---------------------------------------------------------------------
-    wb_config = {
-    "wb_pause_s_threshold": 3.0,
-    "threshold_one_side": 3,
-    "threshold_two_sides": 5,
-    "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC>0)",
-}
-    session_folder = saved_paths["events"].parent
+#     # ---------------------------------------------------------------------
+#     # Step 3: walking-bout extraction
+#     # ---------------------------------------------------------------------
+#     wb_config = {
+#     "wb_pause_s_threshold": 3.0,
+#     "threshold_one_side": 3,
+#     "threshold_two_sides": 5,
+#     "use_only_quality_checked_events": True,
+#     "event_quality_column": "quality_check(IC>0)",
+# }
+#     session_folder = saved_paths["events"].parent
     
-    wb_pipeline = WBpipeline(
-        session_folder=session_folder,
-        config=wb_config,
-    )
+#     wb_pipeline = WBpipeline(
+#         session_folder=session_folder,
+#         config=wb_config,
+#     )
     
-    wb_pipeline.load_events()
-    wb_pipeline.detect_wb_pauses()
-    wb_pipeline.extract_walking_bouts()
+#     wb_pipeline.load_events()
+#     wb_pipeline.detect_wb_pauses()
+#     wb_pipeline.extract_walking_bouts()
     
-    wb_saved_paths = wb_pipeline.save_outputs() 
+#     wb_saved_paths = wb_pipeline.save_outputs() 
     
-    wb_config = {
-    "wb_pause_s_threshold": 3.0,
-    "threshold_one_side": 3,
-    "threshold_two_sides": 5,
-    "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC>0)",
-}
+#     wb_config = {
+#     "wb_pause_s_threshold": 3.0,
+#     "threshold_one_side": 3,
+#     "threshold_two_sides": 5,
+#     "use_only_quality_checked_events": True,
+#     "event_quality_column": "quality_check(IC>0)",
+# }
 
 
 if __name__ == "__main__":

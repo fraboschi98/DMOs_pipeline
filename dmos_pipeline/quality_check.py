@@ -13,14 +13,14 @@ Goal
 3. Load events CSV produced by 1_Gaitmap.py.
 4. Load parameters CSV produced by 1_Gaitmap.py.
 5. Add quality labels to events:
-       - quality_check(IC>0)
+       - quality_check(IC<0)
        - notes
 
    Events rule:
        - if foot == left, check filtered left_sensor gyr_ml at IC sample
        - if foot == right, check filtered right_sensor gyr_ml at IC sample
-       - quality_check(IC>0) = False if filtered gyr_ml at IC > 0
-       - quality_check(IC>0) = True otherwise
+       - quality_check(IC<0) = False if filtered gyr_ml at IC > 0
+       - quality_check(IC<0) = True otherwise
 
 6. Add quality labels to parameters:
        - quality_check
@@ -78,13 +78,13 @@ class QualityCheck:
 
        The following columns are added to the events table:
 
-       - `quality_check(IC>0)`
+       - `quality_check(IC<0)`
        - `notes`
 
        By default:
 
-       - `quality_check(IC>0) = False` if filtered `gyr_ml` at IC > 0
-       - `quality_check(IC>0) = True` otherwise
+       - `quality_check(IC<0) = False` if filtered `gyr_ml` at IC > 0
+       - `quality_check(IC<0) = True` otherwise
 
     2. Parameter-level quality check
        Stride-level parameters are checked using configurable plausibility
@@ -128,7 +128,7 @@ class QualityCheck:
 
         # ---- Event-level quality check ----
         "ic_threshold": 0.0,
-        "events_quality_col": "quality_check(IC>0)",
+        "events_quality_col": "quality_check(IC<0)",
         "notes_col": "notes",
 
         # ---- Parameter-level quality check ----
@@ -743,7 +743,7 @@ class QualityCheck:
     def label_events_quality_check(self):
         """
         Add:
-            quality_check(IC>0)
+            quality_check(IC<0)
             notes
 
         True means the event passed.
@@ -985,6 +985,82 @@ class QualityCheck:
 
         return log_path
 
+    def propagate_event_quality_to_parameters(self):
+        """
+        Propagate failed event-level QC to stride-level parameters.
+        
+        If an event has quality_check(IC>0) == False, then the parameter row
+        with the same s_id is also marked as quality_check == False.
+        
+        This does not remove rows. It only updates:
+            - quality_check
+            - notes
+        """
+        
+        if self.events is None:
+            raise RuntimeError("events is None. Run label_events_quality_check() first.")
+        
+        if self.parameters is None:
+            raise RuntimeError("parameters is None. Run label_parameters_quality_check() first.")
+        
+        event_qc_col = self.events_quality_col
+        param_qc_col = "quality_check"
+        notes_col = self.notes_col
+        
+        if event_qc_col not in self.events.columns:
+            raise ValueError(f"Missing event quality column: {event_qc_col}")
+        
+        if param_qc_col not in self.parameters.columns:
+            raise ValueError(f"Missing parameter quality column: {param_qc_col}")
+        
+        if "s_id" not in self.events.columns:
+            raise ValueError("Missing s_id column in events.")
+        
+        if "s_id" not in self.parameters.columns:
+            raise ValueError("Missing s_id column in parameters.")
+        
+        events = self.events.copy()
+        params = self.parameters.copy()
+        
+        events["s_id"] = pd.to_numeric(events["s_id"], errors="coerce")
+        params["s_id"] = pd.to_numeric(params["s_id"], errors="coerce")
+        
+        failed_event_s_ids = set(
+            events.loc[
+                events[event_qc_col] == False,
+                "s_id"
+            ]
+            .dropna()
+            .astype(int)
+            .tolist()
+        )
+        
+        if not failed_event_s_ids:
+            self.parameters = params
+            return self
+        
+        affected = params["s_id"].astype("Int64").isin(failed_event_s_ids)
+        
+        params.loc[affected, param_qc_col] = False
+        
+        propagation_note = f"associated event failed {event_qc_col}"
+        
+        def add_note(existing_note):
+            if pd.isna(existing_note) or str(existing_note).strip() == "":
+                return propagation_note
+        
+            existing_note = str(existing_note)
+        
+            if propagation_note in existing_note:
+                return existing_note
+        
+            return f"{existing_note} | {propagation_note}"
+        
+        params.loc[affected, notes_col] = params.loc[affected, notes_col].apply(add_note)
+        
+        self.parameters = params
+        
+        return self
     # ============================================================
     # SAVE
     # ============================================================
@@ -1020,6 +1096,7 @@ class QualityCheck:
         self.filter_signal()
         self.label_events_quality_check()
         self.label_parameters_quality_check()
+        self.propagate_event_quality_to_parameters()
         print("QC patient_id:", self.patient_id)
         print("QC session_id:", self.session_id)
         print("QC recording_date:", self.recording_date)
