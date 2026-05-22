@@ -63,7 +63,7 @@ def main():
     )
     
     project_folder = Path(
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova2"
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova3"
     )
     if not signal_path.exists():
         raise FileNotFoundError(
