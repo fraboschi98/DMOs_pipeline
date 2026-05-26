@@ -11,7 +11,7 @@ import json
 
 
 
-class CollectorCSV:
+class Collector:
     """
     Collect session-level CSV and JSON outputs for one patient.
 
