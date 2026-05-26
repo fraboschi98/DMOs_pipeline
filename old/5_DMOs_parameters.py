@@ -114,6 +114,7 @@ class CollectorCSV:
         print(f"  wb_dataframe rows: {len(self.wb_dataframe)}")
         print(f"  wb_pauses_dataframe rows: {len(self.wb_pauses_dataframe)}")
         print(f"  logs loaded: {len(self.log)}")
+
 class WalkingBouts:
     def __init__(self, parameters, wb_dataframe, wb_pauses_dataframe):
         self.parameters = parameters.copy()
