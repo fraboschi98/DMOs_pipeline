@@ -966,18 +966,28 @@ class DayLevel_analyzer:
     
         return self   
 
-    def save_day_dmos(self, output_folder):
+    def save_day_dmos(self, output_folder, filename_suffix=None):
         """
-        Save day_dmos as a CSV file.
+        Save `day_dmos` as a CSV file.
     
-        The output filename is created using patient_id and recording_date:
+        The method saves the final day-level DMO table created by `run()`.
     
-            <patient_id>_<recording_date>_day_dmos.csv
+        The filename is built from the patient ID only:
+    
+            <patient_id>_day_dmos.csv
+    
+        If `filename_suffix` is provided, the filename becomes:
+    
+            <patient_id>_<filename_suffix>_day_dmos.csv
     
         Parameters
         ----------
         output_folder : str or pathlib.Path
             Folder where the CSV file will be saved.
+    
+        filename_suffix : str, optional
+            Optional suffix to include in the output filename.
+            Example: "selected_dates" or "all_dates".
     
         Returns
         -------
@@ -987,10 +997,10 @@ class DayLevel_analyzer:
         Raises
         ------
         ValueError
-            If day_dmos is empty.
+            If `day_dmos` is empty.
     
         KeyError
-            If patient_id or recording_date is missing from day_dmos.
+            If `patient_id` is missing from `day_dmos`.
         """
     
         if self.day_dmos.empty:
@@ -998,21 +1008,33 @@ class DayLevel_analyzer:
                 "day_dmos is empty. Run run() before saving."
             )
     
-        required_cols = ["patient_id", "recording_date"]
-    
-        for col in required_cols:
-            if col not in self.day_dmos.columns:
-                raise KeyError(f"Column '{col}' not found in day_dmos")
+        if "patient_id" not in self.day_dmos.columns:
+            raise KeyError("Column 'patient_id' not found in day_dmos")
     
         output_folder = Path(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
     
-        patient_id = self.day_dmos["patient_id"].iloc[0]
-        recording_date = self.day_dmos["recording_date"].iloc[0]
+        patient_ids = (
+            self.day_dmos["patient_id"]
+            .dropna()
+            .astype(str)
+            .unique()
+        )
     
-        filename = f"{patient_id}_{recording_date}_day_dmos.csv"
+        if len(patient_ids) != 1:
+            raise ValueError(
+                f"Expected one patient_id, found: {list(patient_ids)}"
+            )
+    
+        patient_id = patient_ids[0]
+    
+        if filename_suffix is None:
+            filename = f"{patient_id}_day_dmos.csv"
+        else:
+            filename = f"{patient_id}_{filename_suffix}_day_dmos.csv"
+    
         output_path = output_folder / filename
     
         self.day_dmos.to_csv(output_path, index=False)
     
-        return output_path    
+        return output_path
