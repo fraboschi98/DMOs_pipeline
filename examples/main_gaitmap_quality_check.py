@@ -39,7 +39,7 @@ def parse_filename_metadata(signal_path: str):
 
     Expected filename format
     ------------------------
-    PAT401_week_3_2023-07-10_gaitMAP_bf_all.csv
+    PAT401_week_3_2023-07-12_gaitMAP_bf_all.csv
     """
 
     filename = Path(signal_path).name
@@ -65,7 +65,7 @@ def main():
     # User inputs
     # ---------------------------------------------------------------------
     signal_path = Path(
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\Desktop\Luxembourg_Analysis\HOME_MONITORING\PAT401\week_1\2023-07-14\PAT401_week_1_2023-07-14_gaitMAP_bf_all.csv"
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\Desktop\Luxembourg_Analysis\HOME_MONITORING\PAT401\week_1\2023-07-11\PAT401_week_1_2023-07-11_gaitMAP_bf_all.csv"
     )
 
     project_folder = Path(
@@ -112,7 +112,7 @@ def main():
         "event_quality_column": "quality_check(IC<0)",
     }
 
-    plot_pauses = True
+    plot_pauses = False
 
     pause_plot_config = {
         "sampling_rate_hz": 102.4,

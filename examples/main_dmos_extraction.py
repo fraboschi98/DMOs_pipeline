@@ -50,7 +50,7 @@ def main():
     # date = "2023-07-14"
 
     # Option 2: selected list of dates
-    date = ["2023-07-10", "2023-07-14", "2023-07-17"]
+    date = ["2023-07-10", "2023-07-11","2023-07-14","2023-07-17"]
 
     # Option 3: all available date folders
     # date = "all"
