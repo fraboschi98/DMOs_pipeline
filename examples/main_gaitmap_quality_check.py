@@ -2,6 +2,13 @@
 
 # -*- coding: utf-8 -*-
 """
+Created on Thu Nov  5 13:31:18 2026
+
+@author: francesca.boschi
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Example script: run gaitmap processing followed by quality control.
 
 This script:
@@ -10,9 +17,9 @@ This script:
 3. Saves gait events, stride-level parameters, and the processing log.
 4. Runs quality control on the exported events and parameters.
 5. Updates the exported CSV files and the processing log.
+6. Extracts walking bouts and pauses.
+7. Optionally plots every walking-bout pause.
 """
-
-# -*- coding: utf-8 -*-
 
 import sys
 from pathlib import Path
@@ -20,11 +27,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import os
 import re
 import pandas as pd
 
-from dmos_pipeline import GaitMapPipeline, QualityCheck, WBpipeline
+from dmos_pipeline import GaitMapPipeline, QualityCheck, WBpipeline, PausePlotter
 
 
 def parse_filename_metadata(signal_path: str):
@@ -61,16 +67,17 @@ def main():
     signal_path = Path(
         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\Desktop\Luxembourg_Analysis\HOME_MONITORING\PAT401\week_1\2023-07-14\PAT401_week_1_2023-07-14_gaitMAP_bf_all.csv"
     )
-    
+
     project_folder = Path(
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova3"
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova_dmos_kit"
     )
+
     if not signal_path.exists():
         raise FileNotFoundError(
             "Please update `signal_path` with the path to your gaitmap-compatible "
             "IMU signal file."
         )
-    
+
     project_folder.mkdir(parents=True, exist_ok=True)
 
     gaitmap_config = {
@@ -95,6 +102,31 @@ def main():
         "apply_events_ic_check": True,
         "apply_turning_angle_check": True,
         "apply_parameter_outlier_check": True,
+    }
+
+    wb_config = {
+        "wb_pause_s_threshold": 3.0,
+        "threshold_one_side": 3,
+        "threshold_two_sides": 5,
+        "use_only_quality_checked_events": True,
+        "event_quality_column": "quality_check(IC<0)",
+    }
+
+    plot_pauses = True
+
+    pause_plot_config = {
+        "sampling_rate_hz": 102.4,
+        "channel": "gyr_ml",
+        "cutoff_freq_gyr": 5.0,
+        "filter_order_gyr": 4,
+        "samples_before_pause": 500,
+        "samples_after_pause": 500,
+        "show_plot": False,
+        "save_plots": True,
+        "figsize": (15, 5),
+        "dpi": 150,
+        "use_only_quality_checked_events": True,
+        "event_quality_column": "quality_check(IC<0)",
     }
 
     # ---------------------------------------------------------------------
@@ -139,39 +171,44 @@ def main():
     )
     quality_check.run()
 
-
-    
-
     # ---------------------------------------------------------------------
     # Step 3: walking-bout extraction
     # ---------------------------------------------------------------------
-    wb_config = {
-    "wb_pause_s_threshold": 3.0,
-    "threshold_one_side": 3,
-    "threshold_two_sides": 5,
-    "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC<0)",
-}
     session_folder = saved_paths["events"].parent
-    
+
     wb_pipeline = WBpipeline(
         session_folder=session_folder,
         config=wb_config,
     )
-    
+
     wb_pipeline.load_events()
     wb_pipeline.detect_wb_pauses()
     wb_pipeline.extract_walking_bouts()
-    
-    wb_saved_paths = wb_pipeline.save_outputs() 
-    
-    wb_config = {
-    "wb_pause_s_threshold": 3.0,
-    "threshold_one_side": 3,
-    "threshold_two_sides": 5,
-    "use_only_quality_checked_events": True,
-    "event_quality_column": "quality_check(IC<0)",
-}
+
+    wb_saved_paths = wb_pipeline.save_outputs()
+
+    # ---------------------------------------------------------------------
+    # Step 4: plot walking-bout pauses
+    # ---------------------------------------------------------------------
+    pauses_path = wb_saved_paths.get("wb_pauses_dataframe")
+    breaks_path = wb_saved_paths.get("signal_break_dataframe")
+
+    if plot_pauses and pauses_path is not None and breaks_path is not None:
+        pause_plotter = PausePlotter(
+            signal_raw=signal_raw,
+            pauses_path=pauses_path,
+            events_path=saved_paths["events"],
+            breaks_path=breaks_path,
+            output_folder=session_folder / "pauses_plot",
+            config=pause_plot_config,
+        )
+        pause_plot_paths = pause_plotter.run()
+        print(
+            f"Saved {len(pause_plot_paths)} pause plots in: "
+            f"{session_folder / 'pauses_plot'}"
+        )
+    elif plot_pauses:
+        print("No pauses/breaks file saved for this recording - skipping pause plots.")
 
 
 if __name__ == "__main__":

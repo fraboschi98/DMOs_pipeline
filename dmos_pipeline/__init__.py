@@ -10,6 +10,7 @@ from .csv_collector import Collector
 from .wb_analyzer import WalkingBouts_analyzer
 from .day_analyzer import DayLevel_analyzer
 from .kde_plotter import KDEPlotter
+from .pause_plotter import PausePlotter
 
 __all__ = [
     "GaitMapPipeline",
@@ -19,4 +20,5 @@ __all__ = [
     "WalkingBouts_analyzer",
     "DayLevel_analyzer",
     "KDEPlotter"
+    "PausePlotter"
 ]
