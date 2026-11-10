@@ -563,8 +563,8 @@ class WalkingBouts_analyzer:
     
         Label rules
         -----------
-        - `MVPA`: cadence > 90 steps/min
-        - `LPA`: cadence <= 90 steps/min
+        - `MVPA`: cadence > 80 steps/min
+        - `LPA`: cadence <= 80 steps/min
     
         Parameters
         ----------
@@ -600,8 +600,8 @@ class WalkingBouts_analyzer:
     
         self.wb_dataframe["PA_type"] = pd.NA
     
-        self.wb_dataframe.loc[cadence > 90, "PA_type"] = "MVPA"
-        self.wb_dataframe.loc[cadence <= 90, "PA_type"] = "LPA"
+        self.wb_dataframe.loc[cadence > 80, "PA_type"] = "MVPA"
+        self.wb_dataframe.loc[cadence <= 80, "PA_type"] = "LPA"
     
         return self
 
