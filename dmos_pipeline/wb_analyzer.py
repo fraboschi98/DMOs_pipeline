@@ -899,7 +899,66 @@ class WalkingBouts_analyzer:
     
         return self
 
+    def compute_wb_asymmetry(self, min_strides_per_foot=10):
+        """
+        Per-WB left-right asymmetry = |mean_right - mean_left|.
 
+        Uses self.parameters, i.e. strides already filtered by
+        clean_parameters(use_quality_check=True), so flagged strides are excluded.
+        A WB gets a value only if both feet have >= min_strides_per_foot
+        valid strides; otherwise NaN.
+        """
+        asym_parameters = [
+            "gait velocity [m/s]",
+            "stride length [m]",
+            "swing time [s]",
+            "stance time [s]",
+        ]
+
+        if self.wb_parameters_average.empty:
+            raise ValueError(
+                "Run compute_wb_parameters_average() before compute_wb_asymmetry()."
+            )
+
+        group_columns = ["patient_id", "recording_date", "session_id", "WB_id"]
+
+        df = self.parameters.copy()
+        for col in asym_parameters:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # mean per WB and per foot + number of valid strides per foot
+        per_foot = df.groupby(group_columns + ["foot"]).agg(
+            n_strides=("s_id", "nunique"),
+            **{col: (col, "mean") for col in asym_parameters},
+        )
+        per_foot = per_foot.unstack("foot")
+
+        asym = pd.DataFrame(index=per_foot.index)
+        asym["n_strides_left_asym"] = per_foot[("n_strides", "left")].fillna(0).astype(int)
+        asym["n_strides_right_asym"] = per_foot[("n_strides", "right")].fillna(0).astype(int)
+
+        eligible = (
+            (asym["n_strides_left_asym"] >= min_strides_per_foot)
+            & (asym["n_strides_right_asym"] >= min_strides_per_foot)
+        )
+
+        for col in asym_parameters:
+            diff = (per_foot[(col, "right")] - per_foot[(col, "left")]).abs()
+            asym[f"asym_{col}"] = diff.where(eligible)
+
+        asym = asym.reset_index()
+
+        # avoid duplicate columns if called twice
+        drop = [c for c in asym.columns
+                if c not in group_columns and c in self.wb_parameters_average.columns]
+
+        self.wb_parameters_average = (
+            self.wb_parameters_average
+            .drop(columns=drop)
+            .merge(asym, on=group_columns, how="left")
+        )
+
+        return self
 
 
     def run(
@@ -907,6 +966,7 @@ class WalkingBouts_analyzer:
         use_quality_check=True,
         use_valid_strides_for_cadence=False,
         pa_state_choice="modified",
+        min_strides_per_foot_asym=10,
     ):
         """
         Run the standard walking-bout analysis workflow.
@@ -961,6 +1021,7 @@ class WalkingBouts_analyzer:
         self.add_pa_type_to_wb_dataframe()
         self.add_pa_state_to_wb_dataframe(choice=pa_state_choice)
         self.compute_wb_parameters_average()
+        self.compute_wb_asymmetry(min_strides_per_foot=min_strides_per_foot_asym)
     
         return self
     def save_wb_parameters_average(self, output_folder, filename_suffix=None):

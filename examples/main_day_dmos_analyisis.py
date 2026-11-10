@@ -56,7 +56,7 @@ def main():
     # Day-level analysis options
     # ------------------------------------------------------------------
     use_valid_strides_for_distance = False
-    aggregation = "mean"
+    aggregation = "median"
     include_very_short = False
 
     # ------------------------------------------------------------------

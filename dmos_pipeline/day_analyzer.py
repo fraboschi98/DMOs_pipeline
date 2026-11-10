@@ -915,6 +915,63 @@ class DayLevel_analyzer:
             )
     
         return self
+
+    def compute_wb_asymmetry_summary(self):
+        """
+        Day-level asymmetry = median over the day's eligible WBs
+        (WBs with a non-NaN asymmetry value, i.e. >= 10 valid strides per foot).
+
+        Output columns:
+            asym_WB_gait velocity [m/s], asym_WB_stride length [m],
+            asym_WB_swing time [s], asym_WB_stance time [s], n_WB_asym
+        """
+        asym_cols = [
+            "asym_gait velocity [m/s]",
+            "asym_stride length [m]",
+            "asym_swing time [s]",
+            "asym_stance time [s]",
+        ]
+
+        missing = [c for c in asym_cols if c not in self.wb_parameters_average.columns]
+        if missing:
+            raise KeyError(
+                f"{missing} not found in wb_parameters_average. "
+                "Re-run WalkingBouts_analyzer (main_dmos_extraction.py) first."
+            )
+
+        wb_unique = self.wb_parameters_average.drop_duplicates(
+            subset=["patient_id", "recording_date", "session_id", "WB_id"]
+        )
+        eligible = wb_unique.dropna(subset=asym_cols, how="all")
+
+        summary = (
+            eligible
+            .groupby(["patient_id", "recording_date"])[asym_cols]
+            .median()
+        )
+        summary.columns = [c.replace("asym_", "asym_WB_", 1) for c in summary.columns]
+        summary["n_WB_asym"] = eligible.groupby(["patient_id", "recording_date"]).size()
+
+        # keep days with no eligible WB (NaN values, n_WB_asym = 0)
+        base_days = self.wb_parameters_average[["patient_id", "recording_date"]].drop_duplicates()
+        summary = base_days.merge(summary.reset_index(),
+                                  on=["patient_id", "recording_date"], how="left")
+        summary["n_WB_asym"] = summary["n_WB_asym"].fillna(0).astype(int)
+
+        if self.day_dmos.empty:
+            self.day_dmos = summary
+        else:
+            self.day_dmos = self.day_dmos.merge(
+                summary, on=["patient_id", "recording_date"], how="outer"
+            )
+
+        return self
+
+
+
+
+
+
     def run(
         self,
         use_valid_strides_for_distance=False,
@@ -963,6 +1020,7 @@ class DayLevel_analyzer:
         self.compute_between_wb_diversity_by_label(
             include_very_short=include_very_short,
         )
+        self.compute_wb_asymmetry_summary()
     
         return self   
 
