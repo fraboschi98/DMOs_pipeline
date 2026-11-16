@@ -23,6 +23,43 @@ extensions = [
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
-html_theme = "sphinx_rtd_theme"
-html_static_path=["_static"]
+# gaitmap is heavy and may fail to install on Read the Docs: mock it so
+# autodoc can build the API pages from docstrings without importing it.
+autodoc_mock_imports = ["gaitmap", "gaitmap_mad"]
 
+#html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
+
+html_theme_options = {
+    "show_nav_level": 2,
+    "show_toc_level": 1,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/fraboschi98/DMOs_pipeline",
+            "icon": "fa-brands fa-github",
+        },
+        
+    # TODO: add link to paper when it's published!
+    # {
+    #     "name": "Paper",
+    #     "url": "https://doi.org/...",
+    #     "icon": "fa-solid fa-file-lines",
+    # },
+    ],
+}
+
+#%% To make logo and favicon appear
+html_static_path = ["_static"]
+html_logo = "_static/logo.png"
+html_favicon = "_static/favicon.ico"
+
+#%% To add banner in lateral sidebar
+templates_path = ["_templates"]
+
+html_sidebars = {
+    "**": [
+        "sidebar-image.html",
+        "sidebar-nav-bs.html",
+    ]
+}

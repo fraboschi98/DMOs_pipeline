@@ -1,8 +1,6 @@
 sphinx
-sphinx-rtd-theme
+pydata-sphinx-theme
 numpy
 pandas
 scipy
 matplotlib
-gaitmap
-gaitmap_mad
