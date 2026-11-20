@@ -88,48 +88,45 @@ COLORS = {
     "grid": "#E2E8F0",         # grid lines
     "surface": "#FFFFFF",
 
-    # Walking-bout counts: pastel blue-grey ramp, light (shortest) -> dark (longest)
-    "very_short": "#DCE4EE",
-    "short": "#AEC0D6",
-    "medium": "#7C95B6",
-    "long": "#4A6588",
+    # Walking-bout counts: blue ramp, light (shortest) -> dark (longest)
+    "very_short": "#D3E3F7",
+    "short": "#7FAEE3",
+    "medium": "#2F67B1",
+    "long": "#0E2A57",
 
-    # Wear strip
-    "wear": "#64748B",         # slate (wearing-time fill)
-    "wear_track": "#EEF2F6",   # empty part of the 24 h track
+    # Wear strip: slate
+    "wear": "#475569",
+    "wear_track": "#E5E9F0",
 
-    # Walking time: soft sage greens
-    "lpa": "#C5DCC8",          # light sage
-    "mvpa": "#5E8C6E",         # deep sage
-    "max_wb": "#4A6588",       # SAME as long WBs
+    # Walking time: greens, same light/dark spread as the WB ramp
+    "lpa": "#A7D7B8",          # light green
+    "mvpa": "#1F7A4D",         # deep green
+    "max_wb": "#0E2A57",       # SAME as long WBs
 
     # Strides & distance
-    "strides": "#CBD5E1",      # light slate bars
-    "strides_text": "#475569",
-    "distance": "#D97706",     # amber line
-    
-    # Bout-to-bout variability: pace = blues, rhythm = ambers
-    "cov_speed": "#2F5D8A",          # deep blue
-    "cov_stride_length": "#8FB3D9",  # light blue
-    "cov_cadence": "#B45309",        # deep amber
-    "cov_stride_time": "#F0B46A",    # light amber
-    
-    # KDE curves per WB category (same blue-grey family as the WB counts,
-    # one step darker so lines read well)
-    "kde_short": "#8DA5C4",
-    "kde_medium": "#6683A8",
-    "kde_long": "#2F4B6E",
-    
-    # Pauses: warm stone ramp, light (shortest) -> dark (longest),
-    # clearly apart from the blue-grey walking-bout ramp
-    "pause_1": "#EFE9DF",
-    "pause_2": "#DCCFBB",
-    "pause_3": "#BBA88A",
-    "pause_4": "#8F7C60",
-    "pause_5": "#5F5241",
-    "pause_kde": "#8F7C60",
-}
+    "strides": "#FBE3A1",      # light warm yellow bars
+    "strides_text": "#78350F", # dark brown: bar values, left axis
+    "distance": "#B45309",     # deep amber line (= cov_cadence)
 
+    # Bout-to-bout variability: pace = blues, rhythm = ambers
+    "cov_speed": "#0E2A57",
+    "cov_stride_length": "#5B93D6",
+    "cov_cadence": "#B45309",
+    "cov_stride_time": "#E9A23B",
+
+    # KDE curves per WB category (WB ramp, one step darker for lines)
+    "kde_short": "#5B93D6",
+    "kde_medium": "#2F67B1",
+    "kde_long": "#0E2A57",
+
+    # Pauses: warm brown ramp, light (shortest) -> dark (longest)
+    "pause_1": "#F1EADF",
+    "pause_2": "#D2BE9E",
+    "pause_3": "#A68660",
+    "pause_4": "#6E5538",
+    "pause_5": "#3A2B1A",
+    "pause_kde": "#6E5538",
+}
 
 def apply_style():
     plt.rcParams.update({
@@ -415,7 +412,7 @@ def plot_time_panel(ax, day_df, show_values=True, show_xlabels=True,
 
     ax.yaxis.set_major_locator(mticker.MultipleLocator(nice_minute_step(y_max)))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(format_duration))
-    ax.set_ylabel("Time")
+    ax.set_ylabel("Duration (min)")
     ax.grid(axis="y", color=COLORS["grid"], linewidth=0.8)
     ax.set_axisbelow(True)
 
@@ -723,7 +720,7 @@ def plot_variability_panel(ax, day_df, wb_category="long", show_values=True,
     ax.set_axisbelow(True)
 
     h, l = ax.get_legend_handles_labels()
-    panel_header(ax, "Coefficient of variation between walking bouts", h, l, ncol=4)
+    panel_header(ax, "Coefficient of variation between Long walking bouts", h, l, ncol=4)
     return ax
 
 
@@ -1104,12 +1101,12 @@ def plot_pause_kde_panel(ax, pauses_df, day_df=None, by_day=False,
     if show_reference:
         for ref in PAUSE_REFERENCE_S:
             lr = np.log10(ref)
-            if grid[0] < lr < grid[-1]:
-                ax.axvline(lr, color=COLORS["ink_muted"], linewidth=0.8,
-                           linestyle=(0, (1, 2)), zorder=1)
-                ax.text(lr, ax.get_ylim()[1] * 0.02, f" {format_seconds_axis(ref)}",
-                        rotation=90, ha="left", va="bottom", fontsize=7.5,
-                        color=COLORS["ink_muted"])
+            # if grid[0] < lr < grid[-1]:
+            #     # ax.axvline(lr, color=COLORS["ink_muted"], linewidth=0.8,
+            #     #            linestyle=(0, (1, 2)), zorder=1)
+            #     # ax.text(lr, ax.get_ylim()[1] * 0.02, f" {format_seconds_axis(ref)}",
+            #     #         rotation=90, ha="left", va="bottom", fontsize=7.5,
+            #     #         color=COLORS["ink_muted"])
 
     # log axis with readable time labels
     tick_s = [1, 5, 10, 30, 60, 300, 600, 1800, 3600, 7200, 14400]

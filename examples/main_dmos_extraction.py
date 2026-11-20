@@ -33,7 +33,7 @@ def main():
     # ------------------------------------------------------------------
     # Patient and project folder
     # ------------------------------------------------------------------
-    patient_id = "PAT401"
+    patient_id = "PAT416"
 
     project_folder = Path(
        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova_dmos_kit"
@@ -49,11 +49,11 @@ def main():
     # Option 1: one specific date
     # date = "2023-07-14"
 
-    # Option 2: selected list of dates
-    date = ["2023-07-10", "2023-07-11","2023-07-14","2023-07-17"]
+    # # Option 2: selected list of dates
+    # date = ["2023-07-10", "2023-07-11","2023-07-14","2023-07-17"]
 
     # Option 3: all available date folders
-    # date = "all"
+    date = "all"
 
     # ------------------------------------------------------------------
     # Step 1: collect processed outputs

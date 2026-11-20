@@ -65,7 +65,7 @@ def main():
     # User inputs
     # ---------------------------------------------------------------------
     signal_path = Path(
-        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\Desktop\Luxembourg_Analysis\HOME_MONITORING\PAT401\week_1\2023-07-11\PAT401_week_1_2023-07-11_gaitMAP_bf_all.csv"
+        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\Desktop\Luxembourg_Analysis\HOME_MONITORING\PAT416\week_1\2024-04-08\PAT416_week_1_2024-04-08_gaitMAP_bf_all.csv"
     )
 
     project_folder = Path(
