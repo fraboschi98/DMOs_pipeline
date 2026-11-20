@@ -7,6 +7,7 @@ from .gaitmap_pipeline import GaitMapPipeline
 from .quality_check import QualityCheck
 from .wb_pipeline import WBpipeline
 from .csv_collector import Collector
+from .complexity_analyzer import PAComplexity_analyzer
 from .wb_analyzer import WalkingBouts_analyzer
 from .day_analyzer import DayLevel_analyzer
 from .kde_plotter import KDEPlotter
@@ -19,6 +20,7 @@ __all__ = [
     "Collector",
     "WalkingBouts_analyzer",
     "DayLevel_analyzer",
-    "KDEPlotter"
-    "PausePlotter"
+    "KDEPlotter",
+    "PausePlotter",
+    "PAComplexity_analyzer",
 ]

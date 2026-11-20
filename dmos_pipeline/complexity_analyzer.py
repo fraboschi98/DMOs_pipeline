@@ -108,6 +108,30 @@ class PAComplexity_analyzer:
         `build_pa_time_series` and `smooth`).
     plzc_lag_ : int or None
         The PLZC lag actually used in the last `compute_metrics` call.
+
+    Examples
+    --------
+    >>> import numpy as np, pandas as pd
+    >>> from dmos_pipeline import PAComplexity_analyzer
+    >>> # minimal toy input: one 90 s walking bout every 15 min over 8 h of wear
+    >>> fs = 102.4
+    >>> starts = [int(m * 15 * 60 * fs) for m in range(32)]
+    >>> wb = pd.DataFrame({
+    ...     "patient_id": "P1", "recording_date": "2023-01-01", "session_id": "s1",
+    ...     "WB_id": range(len(starts)),
+    ...     "start": starts,
+    ...     "end": [s + int(90 * fs) for s in starts],
+    ...     "PA_state": np.random.default_rng(0).integers(7, 27, len(starts)),
+    ... })
+    >>> log = [{"patient_id": "P1", "recording_date": "2023-01-01",
+    ...         "session_id": "s1", "log": {"recording_summary": {
+    ...             "recording_time_hours": 8.0, "wearing_time_hours": 8.0,
+    ...             "wearing_start_sample": 0, "wearing_start_unix_time": 0,
+    ...             "non_wearing_windows_samples": []}}}]
+    >>> analyzer = PAComplexity_analyzer(wb, log, min_wearing_time_hours=0).run()
+    >>> analyzer.complexity_df[["recording_date", "Hn", "LZC", "PLZC"]]
+      recording_date        Hn       LZC      PLZC
+    0     2023-01-01  0.192322  0.004801  0.000459
     """
 
     # State used for every second not covered by a walking bout. In this

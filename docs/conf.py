@@ -18,19 +18,20 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx_design",
 ]
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
-# gaitmap is heavy and may fail to install on Read the Docs: mock it so
-# autodoc can build the API pages from docstrings without importing it.
+# gaitmap is heavy; mock it so autodoc builds without installing it.
 autodoc_mock_imports = ["gaitmap", "gaitmap_mad"]
 
 #html_theme = "sphinx_rtd_theme"
 html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
+    "show_prev_next": False,
     "show_nav_level": 2,
     "show_toc_level": 1,
     "icon_links": [
@@ -39,7 +40,7 @@ html_theme_options = {
             "url": "https://github.com/fraboschi98/DMOs_pipeline",
             "icon": "fa-brands fa-github",
         },
-        
+
     # TODO: add link to paper when it's published!
     # {
     #     "name": "Paper",
@@ -51,6 +52,7 @@ html_theme_options = {
 
 #%% To make logo and favicon appear
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
 
@@ -58,8 +60,10 @@ html_favicon = "_static/favicon.ico"
 templates_path = ["_templates"]
 
 html_sidebars = {
+    "index": [],
     "**": [
         "sidebar-image.html",
         "sidebar-nav-bs.html",
     ]
 }
+

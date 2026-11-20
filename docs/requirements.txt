@@ -1,6 +1,8 @@
 sphinx
 pydata-sphinx-theme
+sphinx-design
 numpy
 pandas
 scipy
 matplotlib
+antropy
