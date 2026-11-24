@@ -69,7 +69,23 @@
 .bd-header .navbar-nav li a.nav-link,
 .bd-header a, .bd-header button, .bd-header i,
 .bd-header .theme-switch-button { color: #fff !important; }
-.bd-header .navbar-nav li a.nav-link:hover { color: #d7fff4 !important; }
+.bd-header .navbar-nav li a.nav-link:hover,
+.bd-header .navbar-nav li a.nav-link:focus,
+.bd-header .navbar-icon-links a:hover,
+.bd-header .navbar-icon-links a:focus,
+.bd-header .theme-switch-button:hover,
+.bd-header .theme-switch-button:focus { color: #dde9e6 !important; text-decoration: none !important; }
+.bd-header .navbar-icon-links a:hover i,
+.bd-header .navbar-icon-links a:focus i,
+.bd-header .theme-switch-button:hover i { color: #dde9e6 !important; }
+/* niente barretta/underline sotto le voci e le icone della navbar */
+.bd-header .navbar-nav li a.nav-link,
+.bd-header .navbar-icon-links a,
+.bd-header .theme-switch-button { border-bottom: none !important; box-shadow: none !important; text-decoration: none !important; }
+.bd-header .navbar-nav li a.nav-link::after,
+.bd-header .navbar-nav li a.nav-link::before,
+.bd-header .navbar-icon-links a::after,
+.bd-header .navbar-icon-links a::before { display: none !important; content: none !important; }
 
 /* ===== Search box: squarer, no Ctrl+K squares ===== */
 .bd-header .search-button-field {
@@ -207,10 +223,73 @@ html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
 .bd-footer__inner { margin-top: 0; margin-bottom: 0; }
 
 /* --- Top navbar: spacing + bold --- */
-.bd-header .navbar-nav > li.nav-item { margin-left: 1rem; margin-right: 1rem; }
+.bd-header .navbar-nav > li.nav-item { margin-left: 1.75rem; margin-right: 1.75rem; }
 
-/* --- Left "On this page": click-to-toggle accordion for top-level sections --- */
-.bd-sidebar-primary #pst-page-toc-nav li.toc-h2 > ul { display: none; }
-.bd-sidebar-primary #pst-page-toc-nav li.toc-h2.expanded > ul,
-.bd-sidebar-primary #pst-page-toc-nav li.toc-h2.expanded > ul ul { display: block; }
-.bd-sidebar-primary #pst-page-toc-nav li.toc-h2 > a { cursor: pointer; }
+/* --- Left "On this page": click-to-toggle accordion (API page only) --- */
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2 > ul { display: none; }
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2.expanded > ul,
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2.expanded > ul ul { display: block; }
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2 > a { cursor: pointer; }
+
+/* --- Left "On this page": hover = teal left dash, no underline --- */
+.bd-sidebar-primary a.nav-link,
+.bd-sidebar-primary .bd-sidenav a.reference.internal { border-left: 3px solid transparent; }
+.bd-sidebar-primary a.nav-link:hover,
+.bd-sidebar-primary a.nav-link:focus,
+.bd-sidebar-primary .bd-sidenav a.reference.internal:hover,
+.bd-sidebar-primary .bd-sidenav a.reference.internal:focus {
+  text-decoration: none !important;
+  border-left-color: #337e77;
+  color: #337e77;
+}
+
+/* "Section Navigation" heading -> same look as "On this page" */
+.bd-sidebar-primary .bd-links__title { font-size: 0 !important; margin-bottom: 0.5rem; }
+.bd-sidebar-primary .bd-links__title::before {
+  content: "In this section";
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* --- Anchor jumps land below the sticky navbar --- */
+html { scroll-padding-top: 5.5rem; }
+
+/* --- "On this page" label: no icon, bold, navy --- */
+.bd-sidebar-primary .page-toc.onthispage i { display: none; }
+.bd-sidebar-primary .page-toc.onthispage {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* --- Consistent left sidebar width across all pages (desktop) --- */
+@media (min-width: 959.98px) {
+  .bd-sidebar-primary { width: 28rem !important; flex: 0 0 28rem !important; }
+}
+
+/* --- Example cards: horizontal (small square image left, text right) --- */
+.ex-card.sd-card { flex-direction: row; align-items: center; text-align: left; }
+.ex-card .sd-card-img-top {
+  width: 90px; height: 90px; object-fit: cover; flex: 0 0 auto;
+  margin: 0.75rem 0 0.75rem 0.75rem; border-radius: 8px;
+}
+.ex-card .sd-card-body { padding: 0.6rem 1rem; }
+.ex-card .sd-card-title { margin-bottom: 0.25rem; }
+.ex-card .sd-card-body p { margin-bottom: 0; }
+
+
+/* --- Examples section nav: align & size to match page-toc entries --- */
+.bd-sidebar-primary nav.bd-links li > a.reference.internal {
+  font-size: var(--pst-sidebar-font-size);
+  padding: 0.25rem 0 0.25rem 1rem;
+  margin-left: -1rem;
+}
+
+/* --- Remove pst-navbar-icon underline bar (Color mode + GitHub) on hover --- */
+.bd-header .pst-navbar-icon::before,
+.bd-header .pst-navbar-icon:hover::before,
+.bd-header .pst-navbar-icon:focus::before {
+  display: none !important;
+  content: none !important;
+  border-bottom: none !important;
+}

@@ -13,12 +13,13 @@ during the build and need no dataset.
    module is finalized.
 
 .. grid:: 1 2 2 2
-   :gutter: 3
+   :gutter: 2
 
    .. grid-item-card:: Gait processing & quality control
       :img-top: /_static/examples/gaitmap_quality_check.png
       :link: gaitmap_quality_check
       :link-type: doc
+      :class-card: ex-card
 
       Stride detection with gaitmap and event/parameter quality control.
 
@@ -26,6 +27,7 @@ during the build and need no dataset.
       :img-top: /_static/examples/dmos_extraction.png
       :link: dmos_extraction
       :link-type: doc
+      :class-card: ex-card
 
       Detect walking bouts and extract micro/macro Digital Mobility Outcomes.
 
@@ -33,6 +35,7 @@ during the build and need no dataset.
       :img-top: /_static/examples/day_dmos.png
       :link: day_dmos
       :link-type: doc
+      :class-card: ex-card
 
       Aggregate to day- and week-level DMOs with the reporting guidance.
 
@@ -40,6 +43,7 @@ during the build and need no dataset.
       :img-top: /_static/examples/kde.png
       :link: kde
       :link-type: doc
+      :class-card: ex-card
 
       Kernel-density plots of gait parameters across walking bouts.
 
@@ -47,6 +51,7 @@ during the build and need no dataset.
       :img-top: /_static/examples/complexity.png
       :link: complexity
       :link-type: doc
+      :class-card: ex-card
 
       PA-state complexity (Hn, LZC, PLZC) and weekly SampEn.
 

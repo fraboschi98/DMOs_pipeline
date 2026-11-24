@@ -22,13 +22,16 @@ document.addEventListener("DOMContentLoaded", function () {
   function init() {
     var toc = document.querySelector(".bd-sidebar-primary #pst-page-toc-nav");
     if (!toc) return;
+    // only the API reference page (which has class/method object entries) gets the accordion
+    if (!toc.querySelector('a.reference.internal[href*="#dmos_pipeline"]')) return;
+    toc.classList.add("accordion-active");
     var tops = Array.prototype.slice.call(toc.querySelectorAll("li.toc-h2"));
     tops.forEach(function (li) {
       if (!li.querySelector("ul")) return;           // no children to toggle
       var a = li.querySelector(":scope > a");
       if (!a) return;
-      a.addEventListener("click", function (e) {
-        e.preventDefault();                          // act as a toggle, don't jump
+      a.addEventListener("click", function () {
+        // let the link scroll to the section (native), AND toggle the accordion
         var wasOpen = li.classList.contains("expanded");
         tops.forEach(function (o) { o.classList.remove("expanded"); });  // accordion
         if (!wasOpen) li.classList.add("expanded");

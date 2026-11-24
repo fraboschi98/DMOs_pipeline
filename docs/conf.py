@@ -69,7 +69,6 @@ templates_path = ["_templates"]
 html_sidebars = {
     "index": [],
     "api": ["sidebar-image.html", "page-toc.html"],
-    "user_guide/*": ["sidebar-image.html", "sidebar-nav-bs.html"],
     "examples/*": ["sidebar-image.html", "sidebar-nav-bs.html"],
     "**": ["sidebar-image.html", "page-toc.html"],
 }
