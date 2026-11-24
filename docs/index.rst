@@ -14,7 +14,7 @@ DMOs Pipeline
          foot-worn IMU recordings in free-living conditions.</p>
          <div class="hero-buttons">
            <a class="hero-btn primary" href="user_guide/index.html">User guide</a>
-           <a class="hero-btn secondary" href="https://github.com/fraboschi98/DMOs_pipeline">GitHub</a>
+           <a class="hero-btn secondary" href="https://github.com/fraboschi98/DMOs_pipeline">Get the code</a>
          </div>
        </div>
        <div class="hero-image">
@@ -87,17 +87,17 @@ Documentation
 
       Concepts, installation, definitions and the processing workflow.
 
-   .. grid-item-card:: :octicon:`beaker` Examples
-      :link: examples/index
-      :link-type: doc
-
-      Worked examples for each stage of the pipeline, shown as code.
-
    .. grid-item-card:: :octicon:`code-square` API reference
       :link: api
       :link-type: doc
 
       All classes, grouped by processing stage.
+
+   .. grid-item-card:: :octicon:`beaker` Examples
+      :link: examples/index
+      :link-type: doc
+
+      Worked examples for each stage of the pipeline, shown as code.
 
    .. grid-item-card:: :octicon:`mark-github` Source code
       :link: https://github.com/fraboschi98/DMOs_pipeline
@@ -113,8 +113,9 @@ Documentation
    :hidden:
    :caption: Contents
 
+   Home <self>
    user_guide/index
-   examples/index
    api
+   examples/index
    citing
    contact

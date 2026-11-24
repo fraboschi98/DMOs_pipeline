@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 project = "DMOs Pipeline"
 author = "Francesca Boschi"
-copyright = "2026, University of Luxembourg, LCSB"
+copyright = "2026, University of Luxembourg, LCSB, Digital Medicine group"
+toc_object_entries_show_parents = "hide"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -36,7 +37,9 @@ html_theme_options = {
     "navbar_persistent": [],
     "navbar_end": ["search-field.html", "theme-switcher", "navbar-icon-links"],
     "show_nav_level": 2,
-    "show_toc_level": 1,
+    "show_toc_level": 2,
+    "footer_start": ["copyright"],
+    "footer_end": [],
     "icon_links": [
         {
             "name": "GitHub",
@@ -65,9 +68,9 @@ templates_path = ["_templates"]
 
 html_sidebars = {
     "index": [],
-    "**": [
-        "sidebar-image.html",
-        "sidebar-nav-bs.html",
-    ]
+    "api": ["sidebar-image.html", "page-toc.html"],
+    "user_guide/*": ["sidebar-image.html", "sidebar-nav-bs.html"],
+    "examples/*": ["sidebar-image.html", "sidebar-nav-bs.html"],
+    "**": ["sidebar-image.html", "page-toc.html"],
 }
 

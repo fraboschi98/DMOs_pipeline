@@ -1,5 +1,7 @@
-Citing dmokit
-=============
+:html_theme.sidebar_secondary.remove: true
+
+Citing
+======
 
 If you use **dmokit** in your research, please cite both the accompanying paper
 and the specific version of the software you used.

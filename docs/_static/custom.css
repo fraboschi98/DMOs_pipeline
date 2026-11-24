@@ -175,8 +175,10 @@ button.long-value-toggle {
 .bd-header form.bd-search:focus-within { box-shadow: 0 0 0 .1875rem #337e77 !important; }
 
 /* ===== Theme-switcher dropdown icons (Light / Dark / System): navy ===== */
-.bd-header .dropdown-menu .theme-change-button i,
-.bd-header .dropdown-menu .dropdown-item i { color: #2c3e50 !important; }
+html[data-theme="light"] .bd-header .dropdown-menu .theme-change-button i,
+html[data-theme="light"] .bd-header .dropdown-menu .dropdown-item i { color: #2c3e50 !important; }
+html[data-theme="dark"] .bd-header .dropdown-menu .theme-change-button i,
+html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #dde9e6 !important; }
 
 /* ===== Docstring rubric headings (Processing steps, Main Outputs, ...) ===== */
 .bd-article p.rubric { font-size: 1rem; font-weight: 600; margin-bottom: .3rem; }
@@ -199,3 +201,16 @@ html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
 .bd-footer p {
   font-size: 0.75rem;
 }
+
+/* --- Footer: thinner bar --- */
+.bd-footer { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+.bd-footer__inner { margin-top: 0; margin-bottom: 0; }
+
+/* --- Top navbar: spacing + bold --- */
+.bd-header .navbar-nav > li.nav-item { margin-left: 1rem; margin-right: 1rem; }
+
+/* --- Left "On this page": click-to-toggle accordion for top-level sections --- */
+.bd-sidebar-primary #pst-page-toc-nav li.toc-h2 > ul { display: none; }
+.bd-sidebar-primary #pst-page-toc-nav li.toc-h2.expanded > ul,
+.bd-sidebar-primary #pst-page-toc-nav li.toc-h2.expanded > ul ul { display: block; }
+.bd-sidebar-primary #pst-page-toc-nav li.toc-h2 > a { cursor: pointer; }

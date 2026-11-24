@@ -1,3 +1,5 @@
+:html_theme.sidebar_secondary.remove: true
+
 Complexity metrics
 ==================
 
@@ -53,3 +55,14 @@ with ``Hn``, ``LZC`` and ``PLZC``). The weekly summary and the barcode figure:
 See also the
 API reference for :class:`~dmos_pipeline.complexity_analyzer.PAComplexity_analyzer`
 (which includes a minimal, self-contained example).
+
+Output
+------
+
+.. note::
+
+   **TODO:** add the output figure(s) after running locally, e.g.::
+
+      .. figure:: ../_static/examples/complexity.png
+         :alt: Complexity metrics output
+         :align: center
