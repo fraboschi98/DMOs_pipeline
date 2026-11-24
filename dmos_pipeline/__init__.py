@@ -11,6 +11,7 @@ from .wb_analyzer import WalkingBouts_analyzer
 from .day_analyzer import DayLevel_analyzer
 from .kde_plotter import KDEPlotter
 from .pause_plotter import PausePlotter
+from .complexity_analyzer import PAComplexity_analyzer
 
 __all__ = [
     "GaitMapPipeline",
@@ -19,6 +20,7 @@ __all__ = [
     "Collector",
     "WalkingBouts_analyzer",
     "DayLevel_analyzer",
-    "KDEPlotter"
-    "PausePlotter"
+    "KDEPlotter",
+    "PausePlotter",
+    "PAComplexity_analyzer",
 ]
