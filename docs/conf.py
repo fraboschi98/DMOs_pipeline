@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 project = "DMOs Pipeline"
 author = "Francesca Boschi"
+copyright = "2026, University of Luxembourg, LCSB"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -32,6 +33,8 @@ html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
     "show_prev_next": False,
+    "navbar_persistent": [],
+    "navbar_end": ["search-field.html", "theme-switcher", "navbar-icon-links"],
     "show_nav_level": 2,
     "show_toc_level": 1,
     "icon_links": [
@@ -53,6 +56,7 @@ html_theme_options = {
 #%% To make logo and favicon appear
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
+html_js_files = ["custom.js"]
 html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
 

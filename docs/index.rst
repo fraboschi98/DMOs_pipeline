@@ -13,7 +13,7 @@ DMOs Pipeline
          <p class="tagline">Standardized Digital Mobility Outcomes from bilateral
          foot-worn IMU recordings in free-living conditions.</p>
          <div class="hero-buttons">
-           <a class="hero-btn primary" href="examples/index.html">Get started</a>
+           <a class="hero-btn primary" href="user_guide/index.html">User guide</a>
            <a class="hero-btn secondary" href="https://github.com/fraboschi98/DMOs_pipeline">GitHub</a>
          </div>
        </div>
@@ -81,23 +81,23 @@ Documentation
 .. grid:: 1 2 2 2
    :gutter: 3
 
+   .. grid-item-card:: :octicon:`book` User guide
+      :link: user_guide/index
+      :link-type: doc
+
+      Concepts, installation, definitions and the processing workflow.
+
    .. grid-item-card:: :octicon:`beaker` Examples
       :link: examples/index
       :link-type: doc
 
       Worked examples for each stage of the pipeline, shown as code.
 
-   .. grid-item-card:: :octicon:`book` API reference
+   .. grid-item-card:: :octicon:`code-square` API reference
       :link: api
       :link-type: doc
 
-      All classes, grouped by processing stage, with usage examples.
-
-   .. grid-item-card:: :octicon:`pulse` Complexity metrics
-      :link: examples/complexity
-      :link-type: doc
-
-      Hn, LZC, PLZC and the PA-state barcode from walking-bout data.
+      All classes, grouped by processing stage.
 
    .. grid-item-card:: :octicon:`mark-github` Source code
       :link: https://github.com/fraboschi98/DMOs_pipeline
@@ -110,9 +110,11 @@ Documentation
    </div>
 
 .. toctree::
-   :maxdepth: 2
    :hidden:
    :caption: Contents
 
+   user_guide/index
    examples/index
    api
+   citing
+   contact

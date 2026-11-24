@@ -1,7 +1,11 @@
 API reference
 =============
 
-The pipeline is organized as object-oriented classes, one per processing stage.
+Reference documentation for the DMOkit classes, grouped by processing stage, with their methods and parameters.
+
+.. contents:: Classes
+   :local:
+   :depth: 1
 
 Gait processing
 ---------------
