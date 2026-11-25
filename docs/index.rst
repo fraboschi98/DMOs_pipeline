@@ -33,7 +33,7 @@ What is DMOkit?
 DMOkit is an open Python framework for standardized real-world Digital Mobility
 Outcomes (DMOs) from bilateral foot-worn IMUs. Starting from the detected strides
 and their stride-level gait parameters, DMOkit identifies walking bouts, applies
-quality control, and aggregates DMOs following the Mobilise-D framework. It also
+quality control, and aggregates DMOs following the literature. It also
 produces a clinical report that gives clinicians an easy overview of the
 patient's condition, with Parkinson's disease as the primary use case.
 
