@@ -1,0 +1,295 @@
+/* ===== Landing hero banner (full-width, two-column) ===== */
+.dmo-hero {
+  background: linear-gradient(135deg, #2c3e50 0%, #18bc9c 100%);
+  color: #fff;
+  width: 100%;
+  padding: 3rem 1.5rem;
+  margin: 0 0 2.5rem 0;
+}
+.dmo-hero .hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+}
+.dmo-hero .hero-text { flex: 1 1 360px; text-align: left; }
+.dmo-hero h1 { color:#fff !important; border:0; margin:0 0 .6rem 0; font-size:2.6rem; font-weight:700; }
+.dmo-hero p.tagline { color: rgba(255,255,255,.92); font-size:1.15rem; max-width:560px; margin:0 0 1.6rem 0; }
+.dmo-hero .hero-buttons { display:flex; gap:.8rem; flex-wrap:wrap; }
+.dmo-hero .hero-btn { display:inline-block; padding:.6rem 1.4rem; border-radius:6px; font-weight:600; text-decoration:none; transition: transform .05s ease, box-shadow .15s ease; }
+.dmo-hero .hero-btn:hover { transform: translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.25); }
+.dmo-hero .hero-btn.primary { background:#fff; color:#2c3e50; }
+.dmo-hero .hero-btn.secondary { background:transparent; color:#fff; border:2px solid #fff; }
+.dmo-hero .hero-image { flex:0 0 auto; text-align:center; }
+.dmo-hero .hero-image img { max-width:230px; width:100%; height:auto; }
+
+/* ===== Home page: full-width content so the hero spans edge-to-edge (no 100vw -> no horizontal scroll) ===== */
+.bd-container__inner.bd-page-width:has(.dmo-hero) {
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.bd-main:has(.dmo-hero) { padding-left: 0 !important; padding-right: 0 !important; }
+.bd-main:has(.dmo-hero) .bd-content,
+.bd-main:has(.dmo-hero) .bd-article-container { max-width: 100% !important; }
+.bd-main:has(.dmo-hero) .bd-content,
+.bd-main:has(.dmo-hero) .bd-article-container,
+.bd-main:has(.dmo-hero) .bd-article {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+}
+/* constrain the sections below the hero */
+.dmo-landing { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+/* ===== "How it works" placeholder ===== */
+.schema-placeholder {
+  border: 2px dashed #9aa7b1;
+  border-radius: 10px;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #6b7a86;
+  font-style: italic;
+  margin: 1rem auto 2rem auto;
+  max-width: 820px;
+}
+
+/* ===== Centered landing sections ===== */
+.dmo-landing section > h2 { text-align: center; }
+.dmo-landing > section > p { text-align: center; max-width: 820px; margin-left: auto; margin-right: auto; }
+
+/* ===== Top navbar: brand gradient, flush with the hero ===== */
+.bd-header, .bd-header.navbar {
+  background: linear-gradient(135deg, #2c3e50 0%, #18bc9c 100%) !important;
+  box-shadow: none !important;
+}
+.bd-header .navbar-nav li a.nav-link,
+.bd-header a, .bd-header button, .bd-header i,
+.bd-header .theme-switch-button { color: #fff !important; }
+.bd-header .navbar-nav li a.nav-link:hover,
+.bd-header .navbar-nav li a.nav-link:focus,
+.bd-header .navbar-icon-links a:hover,
+.bd-header .navbar-icon-links a:focus,
+.bd-header .theme-switch-button:hover,
+.bd-header .theme-switch-button:focus { color: #dde9e6 !important; text-decoration: none !important; }
+.bd-header .navbar-icon-links a:hover i,
+.bd-header .navbar-icon-links a:focus i,
+.bd-header .theme-switch-button:hover i { color: #dde9e6 !important; }
+/* niente barretta/underline sotto le voci e le icone della navbar */
+.bd-header .navbar-nav li a.nav-link,
+.bd-header .navbar-icon-links a,
+.bd-header .theme-switch-button { border-bottom: none !important; box-shadow: none !important; text-decoration: none !important; }
+.bd-header .navbar-nav li a.nav-link::after,
+.bd-header .navbar-nav li a.nav-link::before,
+.bd-header .navbar-icon-links a::after,
+.bd-header .navbar-icon-links a::before { display: none !important; content: none !important; }
+
+/* ===== Search box: squarer, no Ctrl+K squares ===== */
+.bd-header .search-button-field {
+  background: rgba(255,255,255,.15) !important;
+  border: 1px solid rgba(255,255,255,.45) !important;
+  border-radius: 4px !important;
+  color: #fff !important;
+}
+.bd-header .search-button-field .search-button__default-text { color: #fff !important; }
+.search-button__kbd-shortcut,
+.bd-header .search-button__kbd-shortcut { display: none !important; }
+
+/* ===== Smaller section headings (e.g. "Gait processing") ===== */
+.bd-article h2 { font-size: 1.6rem; }
+
+/* ===== Inline navbar search field (compact, transparent, no modal) ===== */
+.bd-header form.bd-search {
+  max-width: 230px;
+  background-color: rgba(255,255,255,.15) !important;   /* the box itself was white */
+  border: 1px solid rgba(255,255,255,.45) !important;
+  border-radius: 4px !important;
+}
+.bd-header form.bd-search input.form-control {
+  background-color: transparent !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.bd-header form.bd-search input.form-control::placeholder { color: rgba(255,255,255,.85) !important; }
+.bd-header form.bd-search i,
+.bd-header form.bd-search .icon,
+.bd-header form.bd-search .fa-magnifying-glass { color: #fff !important; }
+.bd-header form.bd-search .search-button__kbd-shortcut { display: none !important; }
+
+/* ===== Header dropdowns (theme switcher): readable text on their light bg ===== */
+.bd-header .dropdown-menu,
+.bd-header .dropdown-menu a,
+.bd-header .dropdown-menu button,
+.bd-header .dropdown-menu .dropdown-item {
+  color: var(--pst-color-text-base) !important;
+}
+.bd-header .dropdown-menu .dropdown-item:hover {
+  background-color: var(--pst-color-surface) !important;
+}
+
+/* ===== Brand colours: replace the theme's purple + yellow highlight ===== */
+html[data-theme="light"], html[data-theme="dark"] {
+  --pst-color-secondary: #2c3e50;             /* was purple: # anchor, back-to-top */
+  --pst-color-secondary-text: #ffffff;
+  --pst-color-secondary-highlight: #18bc9c;   /* teal on hover */
+}
+html[data-theme="light"] { --pst-color-target: #dde9e6; }  /* light teal highlight (was yellow) */
+html[data-theme="dark"]  { --pst-color-target: #1f4f45; }
+
+a.headerlink { color: #2c3e50 !important; }
+a.headerlink:hover { color: #3aa48e !important; }
+
+/* ===== Theme-switcher dropdown items: force readable text + icons ===== */
+.bd-header .dropdown-menu li button,
+.bd-header .dropdown-menu li button i,
+.bd-header .dropdown-menu li button span,
+.bd-header .dropdown-menu .theme-change-button {
+  color: var(--pst-color-text-base) !important;
+}
+
+/* ===== Slightly smaller class signatures (autodoc) ===== */
+.bd-article dl.py.class > dt.sig { font-size: 0.9rem; }
+
+/* ===== Smaller method signatures (autodoc) ===== */
+.bd-article dl.py.method > dt.sig,
+.bd-article dl.py.function > dt.sig { font-size: 0.9rem; }
+
+/* ===== Collapse long attribute values (e.g. DEFAULT_CONFIG) with a toggle ===== */
+.long-value-collapsed {
+  display: inline-block;
+  max-width: 48ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+button.long-value-toggle {
+  background: none;
+  border: none;
+  color: #3aa48e;
+  cursor: pointer;
+  font-size: .8em;
+  padding: 0 .25em;
+  font-weight: 600;
+}
+
+/* ===== Attribute/data signatures: same smaller size as methods ===== */
+.bd-article dl.py.attribute > dt.sig,
+.bd-article dl.py.data > dt.sig { font-size: 0.9rem; }
+
+/* ===== Member names (methods/attributes/classes): brand teal, not purple ===== */
+.bd-article dt.sig .sig-name,
+.bd-article dt.sig .sig-name .pre,
+.bd-article dt.sig .descname,
+.bd-article dt.sig .descname .pre { color: #337e77 !important; }
+
+/* ===== Search field focus ring: teal instead of purple ===== */
+.bd-header form.bd-search:focus-within { box-shadow: 0 0 0 .1875rem #337e77 !important; }
+
+/* ===== Theme-switcher dropdown icons (Light / Dark / System): navy ===== */
+html[data-theme="light"] .bd-header .dropdown-menu .theme-change-button i,
+html[data-theme="light"] .bd-header .dropdown-menu .dropdown-item i { color: #2c3e50 !important; }
+html[data-theme="dark"] .bd-header .dropdown-menu .theme-change-button i,
+html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #dde9e6 !important; }
+
+/* ===== Docstring rubric headings (Processing steps, Main Outputs, ...) ===== */
+.bd-article p.rubric { font-size: 1rem; font-weight: 600; margin-bottom: .3rem; }
+
+/* ===== API field-list highlights (Parameters / Returns / Raises) ===== */
+.bd-article dl.field-list > dt,
+.bd-article table.field-list th.field-name {
+  background-color: #dde9e6 !important;
+  border-radius: 3px;
+}
+
+/* ===== Inline code (object, paths, ...): teal instead of purple ===== */
+html[data-theme="light"] { --pst-color-inline-code: #337e77; }
+html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
+
+/* --- Footer: smaller text --- */
+.bd-footer .footer-items__start,
+.bd-footer .footer-items__end,
+.bd-footer .footer-item,
+.bd-footer p {
+  font-size: 0.75rem;
+}
+
+/* --- Footer: thinner bar --- */
+.bd-footer { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+.bd-footer__inner { margin-top: 0; margin-bottom: 0; }
+
+/* --- Top navbar: spacing + bold --- */
+.bd-header .navbar-nav > li.nav-item { margin-left: 1.75rem; margin-right: 1.75rem; }
+
+/* --- Left "On this page": click-to-toggle accordion (API page only) --- */
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2 > ul { display: none; }
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2.expanded > ul,
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2.expanded > ul ul { display: block; }
+.bd-sidebar-primary #pst-page-toc-nav.accordion-active li.toc-h2 > a { cursor: pointer; }
+
+/* --- Left "On this page": hover = teal left dash, no underline --- */
+.bd-sidebar-primary a.nav-link,
+.bd-sidebar-primary .bd-sidenav a.reference.internal { border-left: 3px solid transparent; }
+.bd-sidebar-primary a.nav-link:hover,
+.bd-sidebar-primary a.nav-link:focus,
+.bd-sidebar-primary .bd-sidenav a.reference.internal:hover,
+.bd-sidebar-primary .bd-sidenav a.reference.internal:focus {
+  text-decoration: none !important;
+  border-left-color: #337e77;
+  color: #337e77;
+}
+
+/* "Section Navigation" heading -> same look as "On this page" */
+.bd-sidebar-primary .bd-links__title { font-size: 0 !important; margin-bottom: 0.5rem; }
+.bd-sidebar-primary .bd-links__title::before {
+  content: "In this section";
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* --- Anchor jumps land below the sticky navbar --- */
+html { scroll-padding-top: 5.5rem; }
+
+/* --- "On this page" label: no icon, bold, navy --- */
+.bd-sidebar-primary .page-toc.onthispage i { display: none; }
+.bd-sidebar-primary .page-toc.onthispage {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* --- Consistent left sidebar width across all pages (desktop) --- */
+@media (min-width: 959.98px) {
+  .bd-sidebar-primary { width: 28rem !important; flex: 0 0 28rem !important; }
+}
+
+/* --- Example cards: horizontal (small square image left, text right) --- */
+.ex-card.sd-card { flex-direction: row; align-items: center; text-align: left; }
+.ex-card .sd-card-img-top {
+  width: 90px; height: 90px; object-fit: cover; flex: 0 0 auto;
+  margin: 0.75rem 0 0.75rem 0.75rem; border-radius: 8px;
+}
+.ex-card .sd-card-body { padding: 0.6rem 1rem; }
+.ex-card .sd-card-title { margin-bottom: 0.25rem; }
+.ex-card .sd-card-body p { margin-bottom: 0; }
+
+
+/* --- Examples section nav: align & size to match page-toc entries --- */
+.bd-sidebar-primary nav.bd-links li > a.reference.internal {
+  font-size: var(--pst-sidebar-font-size);
+  padding: 0.25rem 0 0.25rem 1rem;
+  margin-left: -1rem;
+}
+
+/* --- Remove pst-navbar-icon underline bar (Color mode + GitHub) on hover --- */
+.bd-header .pst-navbar-icon::before,
+.bd-header .pst-navbar-icon:hover::before,
+.bd-header .pst-navbar-icon:focus::before {
+  display: none !important;
+  content: none !important;
+  border-bottom: none !important;
+}
