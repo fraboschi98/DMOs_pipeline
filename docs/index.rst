@@ -41,16 +41,16 @@ Each processing step is a separate, self-contained class, so you can run one
 stage on its own or chain them into a full pipeline. Inputs and outputs are plain
 CSV/JSON files, supporting reproducibility and standardization in research.
 
-Which are the functionalities?
-------------------------------
+Key features
+------------
 
 .. grid:: 1 2 2 2
    :gutter: 3
 
    .. grid-item-card:: :octicon:`location` Walking bout identification
 
-      Identify walking bouts from the output of a validated gait algorithm —
-      here we employ gaitmap — using the Mobilise-D walking bout definition.
+      Identify walking bouts from the output of a validated gait algorithm
+      (here we employ gaitmap), using the Mobilise-D walking bout definition.
 
    .. grid-item-card:: :octicon:`checklist` Quality control
 
@@ -60,8 +60,18 @@ Which are the functionalities?
    .. grid-item-card:: :octicon:`graph` DMO aggregation
 
       Aggregate DMOs at the walking bout, day and week level following the
-      Mobilise-D framework, and produce a clinical report for an easy overview
-      of the patient's mobility.
+      literature, including complexity metrics.
+
+   .. grid-item-card:: :octicon:`pulse` Clinical report
+
+      Produce a clinical report that visualizes the patient's mobility, giving
+      clinicians an easy overview.
+
+   .. grid-item-card:: :octicon:`mortar-board` Literature-based
+
+      Definitions, thresholds and methods based on reviewing the literature,
+      working toward standardization, with Parkinson's disease as the primary
+      use case.
 
    .. grid-item-card:: :octicon:`database` Reproducible data structure
 
