@@ -293,3 +293,6 @@ html { scroll-padding-top: 5.5rem; }
   content: none !important;
   border-bottom: none !important;
 }
+
+/* --- Hide the Read the Docs version flyout ("latest" badge) --- */
+.rst-versions, readthedocs-flyout { display: none !important; }
