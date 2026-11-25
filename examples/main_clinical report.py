@@ -251,7 +251,7 @@ class DMOsReport:
                  amount_panels=None, pause_panels=None, show_values=True,
                  wear_valid_hours=None, variability_wb="long", kde_min_wb=5,
                  pause_kde_by_day=False, pause_reference_lines=False,
-                 report_title="Mobility Report"):
+                 report_title="Mobility Report",logo_path=None):
         self.patient_id = str(patient_id)
         self.day_dmos_path = Path(day_dmos_path)
         self.wb_level_path = Path(wb_level_path)
@@ -265,6 +265,7 @@ class DMOsReport:
         self.pause_kde_by_day = pause_kde_by_day
         self.pause_reference_lines = pause_reference_lines
         self.report_title = report_title
+        self.logo_path = Path(logo_path) if logo_path else None
 
         self.sections = {"amount_pattern": True, "variability": True,
                          "kde": True, "pauses": True}
@@ -885,9 +886,21 @@ class DMOsReport:
         fig.text(x1, y, f"Page {page} of {n_pages}", ha="right", va="top",
                  fontsize=8.5, color=COLORS["ink_muted"])
 
-        fig.text(x0, 0.3 / page_h, f"Generated {date.today():%d %b %Y}  ·  "
-                 "dmos_kit", ha="left", va="bottom",
-                 fontsize=7.5, color=COLORS["ink_muted"])
+                # Footer: logo (optional) + "Generated ... · dmoskit"
+        footer_y = 0.3                      # inches from the bottom of the page
+        text_x = MARGIN_LEFT
+        if self.logo_path and self.logo_path.exists():
+            logo = plt.imread(self.logo_path)
+            logo_h = 0.22                   # logo height in inches
+            logo_w = logo_h * logo.shape[1] / logo.shape[0]   # keep aspect ratio
+            ax_logo = fig.add_axes([MARGIN_LEFT / page_w, (footer_y - 0.04) / page_h,
+                                    logo_w / page_w, logo_h / page_h])
+            ax_logo.imshow(logo)
+            ax_logo.axis("off")
+            text_x = MARGIN_LEFT + logo_w + 0.08              # text starts after the logo
+        fig.text(text_x / page_w, footer_y / page_h,
+                 f"dmokit   ·   Generated {date.today():%d %b %Y}",
+                 ha="left", va="bottom", fontsize=7.5, color=COLORS["ink_muted"])
     @staticmethod
     def draw_section_header(fig, y_inches, title, subtitle, rule_gap=0.14):
         """Horizontal rule across the page, then section title and subtitle."""
@@ -902,15 +915,7 @@ class DMOsReport:
         if subtitle:
             fig.text(x0, (y_title - 0.24) / page_h, subtitle, ha="left", va="top",
                      fontsize=8.5, color=COLORS["ink_muted"])
-    @staticmethod
-    def draw_section_header(fig, y_inches, title, subtitle):
-        page_w, page_h = fig.get_size_inches()
-        x0 = MARGIN_LEFT / page_w
-        fig.text(x0, y_inches / page_h, title, ha="left", va="top", fontsize=12.5,
-                 fontweight="bold", color=COLORS["ink"])
-        if subtitle:
-            fig.text(x0, (y_inches - 0.24) / page_h, subtitle, ha="left", va="top",
-                     fontsize=8.5, color=COLORS["ink_muted"])
+    
 
     def rows_page_1(self):
         """Amount & Pattern + Variability."""
@@ -927,9 +932,9 @@ class DMOsReport:
             rows.append(("space", 0.55))          # day labels under the last panel
         if self.sections["variability"]:
             subtitle = (f"Coefficient of variation between "
-                        f"{WB_CATEGORY_TEXT.get(self.variability_wb, self.variability_wb)}"
-                        "  ·  dashed = rhythm parameters")
-            rows += [("header", 0.62, "Bout-to-bout variability", subtitle),
+                        f"{WB_CATEGORY_TEXT.get(self.variability_wb, self.variability_wb)}")
+                        
+            rows += [("header", 0.62, "Bout-to-Bout variability", subtitle),
                      ("space", 0.38), ("flex", 1.15, ["variability"]),
                      ("space", 0.75)]             # day labels + number of WBs
         return rows, panels
@@ -938,7 +943,7 @@ class DMOsReport:
         """Gait distributions + Pauses."""
         rows = []
         if self.sections["kde"]:
-            rows += [("header", 0.62, "Gait distributions",
+            rows += [("header", 0.62, "DMOs KDE distributions",
                       "Walking-bout values pooled over the period, by bout duration"),
                      ("space", 0.25, "kde_legend"),
                      ("space", 0.25), ("flex", 0.9, ["kde_0", "kde_1"]),
@@ -1086,6 +1091,8 @@ if __name__ == "__main__":
     SHOW_PLOTS = True              # open the pages in a window
 
     plt.close("all")
+    
+    LOGO_PATH=r'C:\Users\francesca.boschi\Documents\GitHub\DMOs_pipeline\dmos_pipeline\logo.png'
 
     report = DMOsReport(
         patient_id=PATIENT_ID,
@@ -1101,6 +1108,7 @@ if __name__ == "__main__":
         kde_min_wb=KDE_MIN_WB,
         pause_kde_by_day=PAUSE_KDE_BY_DAY,
         pause_reference_lines=PAUSE_REFERENCE_LINES,
+        logo_path=LOGO_PATH
     )
 
     report.build()
