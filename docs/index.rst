@@ -27,17 +27,19 @@ DMOs Pipeline
 
    <div class="dmo-landing">
 
-What is DMOkit pipeline?
-------------------------
+What is DMOkit?
+--------------
 
-DMOkit is an open Python framework that turns raw bilateral foot-worn IMU
-recordings into standardized Digital Mobility Outcomes (DMOs) for real-world
-physical-activity monitoring. It builds on already-validated gait algorithms and
-adds standardized walking-bout identification, quality control and aggregation,
-following the Mobilise-D framework. It is built around object-oriented classes
-and a non-relational CSV/JSON data organization, so each step can run on its own
-or as an end-to-end pipeline, and is designed for reproducible use in clinical
-studies.
+DMOkit is an open Python framework for standardized real-world Digital Mobility
+Outcomes (DMOs) from bilateral foot-worn IMUs. Starting from the detected strides
+and their stride-level gait parameters (produced by a validated algorithm such as
+gaitmap), DMOkit identifies walking bouts, applies quality control, and
+aggregates DMOs, following the Mobilise-D framework.
+
+Each processing step is a separate, self-contained class, so you can run one
+stage on its own or chain them into a full pipeline. Inputs and outputs are plain
+CSV/JSON files (no database needed), which keeps runs transparent and
+reproducible for clinical studies.
 
 Which are the functionalities?
 ------------------------------
@@ -45,25 +47,25 @@ Which are the functionalities?
 .. grid:: 1 2 2 2
    :gutter: 3
 
-   .. grid-item-card:: :octicon:`location` Walking-bout identification
+   .. grid-item-card:: :octicon:`location` Walking bout identification
 
-      Identify walking bouts from the output of an already-validated gait
-      algorithm (e.g. gaitmap), using the Mobilise-D walking-bout definition.
+      Identify walking bouts from the output of a validated gait algorithm
+      (e.g. gaitmap), using the Mobilise-D walking bout definition.
 
-   .. grid-item-card:: :octicon:`checklist` Quality control & aggregation
+   .. grid-item-card:: :octicon:`checklist` Quality control
 
-      Event- and stride-level quality checks, and aggregation of gait
-      parameters following available literature.
+      Event- and stride-level quality checks that flag implausible strides and
+      events with labels, without removing any data.
 
-   .. grid-item-card:: :octicon:`graph` Multi-level DMOs
+   .. grid-item-card:: :octicon:`graph` DMO aggregation
 
-      Spatiotemporal micro-parameters, macro-parameters and complexity metrics,
-      and day- and week-level summaries for physical-activity monitoring.
+      Aggregates DMOs at walking bout, day and week level, following the
+      literature.
 
    .. grid-item-card:: :octicon:`database` Reproducible data structure
 
-      Object-oriented classes and a standardized CSV/JSON organization for
-      real-world clinical studies.
+      Modular classes with plain CSV/JSON inputs and outputs, for reproducible
+      use in clinical studies.
 
 How it works
 ------------
@@ -75,8 +77,8 @@ How it works
      <code>docs/_static/pipeline_schema.png</code> and replace this placeholder.
    </div>
 
-Documentation
--------------
+Explore the docs
+----------------
 
 .. grid:: 1 2 2 2
    :gutter: 3
