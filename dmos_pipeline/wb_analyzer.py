@@ -903,20 +903,24 @@ class WalkingBouts_analyzer:
     
         return self
 
+
     def compute_wb_asymmetry(self, min_strides_per_foot=10):
         """
-        Per-WB left-right asymmetry = |mean_right - mean_left|.
+        Per-WB asymmetry and within-WB CoV of gait parameters, all in %.
 
-        Uses self.parameters, i.e. strides already filtered by
-        clean_parameters(use_quality_check=True), so flagged strides are excluded.
-        A WB gets a value only if both feet have >= min_strides_per_foot
-        valid strides; otherwise NaN.
+            asym_<param> [%] = |mean_R - mean_L| / ((mean_R + mean_L) / 2) * 100
+            cov_<param> [%]  = SD / mean * 100 over all strides of the WB (both feet)
+
+        Parameters: gait velocity, stride length, stride time, stance time, swing time.
+        Uses self.parameters (strides after clean_parameters()). A WB gets values
+        only if both feet have >= min_strides_per_foot valid strides; otherwise NaN.
         """
-        asym_parameters = [
+        parameters = [
             "gait velocity [m/s]",
             "stride length [m]",
-            "swing time [s]",
+            "stride time [s]",
             "stance time [s]",
+            "swing time [s]",
         ]
 
         if self.wb_parameters_average.empty:
@@ -927,39 +931,52 @@ class WalkingBouts_analyzer:
         group_columns = ["patient_id", "recording_date", "session_id", "WB_id"]
 
         df = self.parameters.copy()
-        for col in asym_parameters:
+        for col in parameters:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-        # mean per WB and per foot + number of valid strides per foot
+        # per WB and foot: mean of each parameter + number of valid strides
         per_foot = df.groupby(group_columns + ["foot"]).agg(
             n_strides=("s_id", "nunique"),
-            **{col: (col, "mean") for col in asym_parameters},
-        )
-        per_foot = per_foot.unstack("foot")
+            **{col: (col, "mean") for col in parameters},
+        ).unstack("foot")
+        per_foot = per_foot.reindex(columns=pd.MultiIndex.from_product(
+            [["n_strides"] + parameters, ["left", "right"]]))
 
-        asym = pd.DataFrame(index=per_foot.index)
-        asym["n_strides_left_asym"] = per_foot[("n_strides", "left")].fillna(0).astype(int)
-        asym["n_strides_right_asym"] = per_foot[("n_strides", "right")].fillna(0).astype(int)
+        # per WB (both feet together): mean and SD of each parameter
+        per_wb = df.groupby(group_columns)[parameters].agg(["mean", "std"])
+
+        out = pd.DataFrame(index=per_foot.index)
+        out["n_strides_left_asym"] = per_foot[("n_strides", "left")].fillna(0).astype(int)
+        out["n_strides_right_asym"] = per_foot[("n_strides", "right")].fillna(0).astype(int)
 
         eligible = (
-            (asym["n_strides_left_asym"] >= min_strides_per_foot)
-            & (asym["n_strides_right_asym"] >= min_strides_per_foot)
+            (out["n_strides_left_asym"] >= min_strides_per_foot)
+            & (out["n_strides_right_asym"] >= min_strides_per_foot)
         )
 
-        for col in asym_parameters:
-            diff = (per_foot[(col, "right")] - per_foot[(col, "left")]).abs()
-            asym[f"asym_{col}"] = diff.where(eligible)
+        for col in parameters:
+            name = col.split(" [")[0]                 # "stride length [m]" -> "stride length"
 
-        asym = asym.reset_index()
+            right, left = per_foot[(col, "right")], per_foot[(col, "left")]
+            mean_rl = (right + left) / 2
+            out[f"asym_{name} [%]"] = (
+                (right - left).abs() / mean_rl * 100
+            ).where(eligible & (mean_rl > 0))
+
+            mean, sd = per_wb[(col, "mean")], per_wb[(col, "std")]
+            cov = (sd / mean * 100).where(mean > 0).reindex(out.index)
+            out[f"cov_{name} [%]"] = cov.where(eligible)
+
+        out = out.reset_index()
 
         # avoid duplicate columns if called twice
-        drop = [c for c in asym.columns
+        drop = [c for c in out.columns
                 if c not in group_columns and c in self.wb_parameters_average.columns]
 
         self.wb_parameters_average = (
             self.wb_parameters_average
             .drop(columns=drop)
-            .merge(asym, on=group_columns, how="left")
+            .merge(out, on=group_columns, how="left")
         )
 
         return self

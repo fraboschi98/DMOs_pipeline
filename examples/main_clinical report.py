@@ -135,21 +135,23 @@ WB_CATEGORY_TEXT = {
 }
 
 VARIABILITY_PARAMS = [
-    # (key in COLORS, column suffix in day file, legend label, marker, line)
-    ("cov_speed",         "gait velocity [m/s]",     "Gait velocity", "o", "-"),
-    ("cov_stride_length", "stride length [m]",       "Stride length", "s", "-"),
-    ("cov_cadence",       "cadence_[steps_per_min]", "Cadence",       "o", "--"),
-    ("cov_stride_time",   "stride time [s]",         "Stride time",   "s", "--"),
+    # (key in COLORS, day-file column ({cat} = WB category), legend label, marker, line)
+    # solid = CoV between bouts, dashed = daily median within bouts
+    ("cov_speed",         "cov_{cat}_WB_gait velocity [m/s]",        "Velocity CoV",        "o", "-"),
+    ("cov_cadence",       "cov_{cat}_WB_cadence_[steps_per_min]",    "Cadence CoV",         "o", "-"),
+    ("cov_stride_length", "median_{cat}_WB_asym_stride length [%]",  "Stride length asym.", "s", "--"),
+    ("cov_stride_time",   "median_{cat}_WB_cov_stride time [%]",     "Stride time CoV",     "s", "--"),
 ]
+ASYM_MIN_STRIDES = 10   # must match min_strides_per_foot_asym in WalkingBouts_analyzer.run()
 
 KDE_WB_LABELS = ["short", "medium", "long"]    # very short excluded
 
 KDE_FEATURES = [
-    # (column in WB file, panel title, unit, decimals)
-    ("gait velocity [m/s]",     "Gait velocity", "m/s",       2),
-    ("stride length [m]",       "Stride length", "m",         2),
-    ("cadence_[steps_per_min]", "Cadence",       "steps/min", 0),
-    ("stride time [s]",         "Stride time",   "s",         2),
+    # (column in WB file, panel title, unit, decimals) - same order as the variability panel
+    ("gait velocity [m/s]",     "Gait velocity",           "m/s",       2),
+    ("cadence_[steps_per_min]", "Cadence",                 "steps/min", 0),
+    ("asym_stride length [%]",  "Stride length asymmetry", "%",         1),
+    ("cov_stride time [%]",     "Stride time CoV",         "%",         1),
 ]
 
 # Pause categories (upper limits in seconds). 1, 5 and 10 min are the
@@ -580,8 +582,8 @@ class DMOsReport:
         x = self.style_day_axis(ax, show_labels=True)
 
         values = {}
-        for key, suffix, _, _, _ in VARIABILITY_PARAMS:
-            name = f"cov_{cat}_WB_{suffix}"
+        for key, template, _, _, _ in VARIABILITY_PARAMS:
+            name = template.format(cat=cat)
             if name not in self.day_df.columns:
                 raise KeyError(f"Column not found in day file: '{name}'")
             values[key] = self.col(name)
@@ -628,7 +630,7 @@ class DMOsReport:
         ax.grid(axis="y", color=COLORS["grid"], linewidth=0.8)
         ax.set_axisbelow(True)
         h, l = ax.get_legend_handles_labels()
-        self.panel_header(ax, f"CoV between {cat} walking bouts", h, l, ncol=4)
+        self.panel_header(ax, f"{cat.capitalize()} walking bouts", h, l, ncol=4)
 
     # -----------------------------------------------------------------
     # PANEL - GAIT DISTRIBUTION (one KDE panel per gait parameter)
@@ -931,12 +933,12 @@ class DMOsReport:
                     rows += [("space", 0.42), ("flex", 1.0, [key])]
             rows.append(("space", 0.55))          # day labels under the last panel
         if self.sections["variability"]:
-            subtitle = (f"Coefficient of variation between "
-                        f"{WB_CATEGORY_TEXT.get(self.variability_wb, self.variability_wb)}")
-                        
-            rows += [("header", 0.62, "Bout-to-Bout variability", subtitle),
+            cat_text = WB_CATEGORY_TEXT.get(self.variability_wb, self.variability_wb)
+            subtitle = (f"{cat_text.capitalize()}  ·  solid = CoV between bouts  ·  "
+                        f"dashed = daily median of WB-level values (≥ 10 strides/foot)")
+            rows += [("header", 0.62, "Gait variability & asymmetry", subtitle),
                      ("space", 0.38), ("flex", 1.15, ["variability"]),
-                     ("space", 0.75)]             # day labels + number of WBs
+                     ("space", 0.9)]              # day labels + 2-line WB counts
         return rows, panels
 
     def rows_page_2(self):

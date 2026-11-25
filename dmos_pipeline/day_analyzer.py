@@ -916,23 +916,25 @@ class DayLevel_analyzer:
     
         return self
 
-    def compute_wb_asymmetry_summary(self):
+    def compute_wb_asymmetry_summary(self, label="long"):
         """
-        Day-level asymmetry = median over the day's eligible WBs
-        (WBs with a non-NaN asymmetry value, i.e. >= 10 valid strides per foot).
+        Day-level median, over the day's eligible WBs of category `label`, of the
+        within-WB asymmetry and CoV metrics (eligible = >= min_strides_per_foot
+        valid strides per foot, set in WalkingBouts_analyzer.run()).
+        label=None -> all WB categories.
 
-        Output columns:
-            asym_WB_gait velocity [m/s], asym_WB_stride length [m],
-            asym_WB_swing time [s], asym_WB_stance time [s], n_WB_asym
+        Output columns (label="long"), for each parameter
+        (gait velocity, stride length, stride time, stance time, swing time):
+            median_long_WB_asym_<param> [%]
+            median_long_WB_cov_<param> [%]
+        plus n_long_WB_asym (number of WBs used).
         """
-        asym_cols = [
-            "asym_gait velocity [m/s]",
-            "asym_stride length [m]",
-            "asym_swing time [s]",
-            "asym_stance time [s]",
-        ]
+        names = ["gait velocity", "stride length", "stride time",
+                 "stance time", "swing time"]
+        cols = [f"asym_{n} [%]" for n in names] + [f"cov_{n} [%]" for n in names]
+        day_keys = ["patient_id", "recording_date"]
 
-        missing = [c for c in asym_cols if c not in self.wb_parameters_average.columns]
+        missing = [c for c in cols if c not in self.wb_parameters_average.columns]
         if missing:
             raise KeyError(
                 f"{missing} not found in wb_parameters_average. "
@@ -942,31 +944,28 @@ class DayLevel_analyzer:
         wb_unique = self.wb_parameters_average.drop_duplicates(
             subset=["patient_id", "recording_date", "session_id", "WB_id"]
         )
-        eligible = wb_unique.dropna(subset=asym_cols, how="all")
+        if label is not None:
+            wb_unique = wb_unique[wb_unique["WB_label"] == label]
+        eligible = wb_unique.dropna(subset=cols, how="all")
 
-        summary = (
-            eligible
-            .groupby(["patient_id", "recording_date"])[asym_cols]
-            .median()
-        )
-        summary.columns = [c.replace("asym_", "asym_WB_", 1) for c in summary.columns]
-        summary["n_WB_asym"] = eligible.groupby(["patient_id", "recording_date"]).size()
+        tag = f"{label}_WB" if label is not None else "WB"
+        n_col = f"n_{tag}_asym"
 
-        # keep days with no eligible WB (NaN values, n_WB_asym = 0)
-        base_days = self.wb_parameters_average[["patient_id", "recording_date"]].drop_duplicates()
-        summary = base_days.merge(summary.reset_index(),
-                                  on=["patient_id", "recording_date"], how="left")
-        summary["n_WB_asym"] = summary["n_WB_asym"].fillna(0).astype(int)
+        summary = eligible.groupby(day_keys)[cols].median()
+        summary.columns = [f"median_{tag}_{c}" for c in cols]
+        summary[n_col] = eligible.groupby(day_keys).size()
+
+        # keep days with no eligible WB (NaN values, n = 0)
+        base_days = self.wb_parameters_average[day_keys].drop_duplicates()
+        summary = base_days.merge(summary.reset_index(), on=day_keys, how="left")
+        summary[n_col] = summary[n_col].fillna(0).astype(int)
 
         if self.day_dmos.empty:
             self.day_dmos = summary
         else:
-            self.day_dmos = self.day_dmos.merge(
-                summary, on=["patient_id", "recording_date"], how="outer"
-            )
+            self.day_dmos = self.day_dmos.merge(summary, on=day_keys, how="outer")
 
         return self
-
 
 
 
@@ -976,7 +975,7 @@ class DayLevel_analyzer:
         self,
         use_valid_strides_for_distance=False,
         aggregation="mean",
-        include_very_short=False,
+        include_very_short=False, asym_label="long"
     ):
         """
         Run the complete day-level DMO pipeline.
@@ -1020,7 +1019,8 @@ class DayLevel_analyzer:
         self.compute_between_wb_diversity_by_label(
             include_very_short=include_very_short,
         )
-        self.compute_wb_asymmetry_summary()
+        
+        self.compute_wb_asymmetry_summary(label=asym_label)
     
         return self   
 
