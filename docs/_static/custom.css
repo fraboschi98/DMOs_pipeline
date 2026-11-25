@@ -1,6 +1,6 @@
 /* ===== Landing hero banner (full-width, two-column) ===== */
 .dmo-hero {
-  background: linear-gradient(135deg, #2c3e50 0%, #18bc9c 100%);
+  background: linear-gradient(135deg, #1E3446 0%, #3E5A80 50%, #6F82B1 100%);
   color: #fff;
   width: 100%;
   padding: 3rem 1.5rem;
@@ -21,7 +21,7 @@
 .dmo-hero .hero-buttons { display:flex; gap:.8rem; flex-wrap:wrap; }
 .dmo-hero .hero-btn { display:inline-block; padding:.6rem 1.4rem; border-radius:6px; font-weight:600; text-decoration:none; transition: transform .05s ease, box-shadow .15s ease; }
 .dmo-hero .hero-btn:hover { transform: translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.25); }
-.dmo-hero .hero-btn.primary { background:#fff; color:#2c3e50; }
+.dmo-hero .hero-btn.primary { background:#fff; color:#1E3446; }
 .dmo-hero .hero-btn.secondary { background:transparent; color:#fff; border:2px solid #fff; }
 .dmo-hero .hero-image { flex:0 0 auto; text-align:center; }
 .dmo-hero .hero-image img { max-width:230px; width:100%; height:auto; }
@@ -63,7 +63,7 @@
 
 /* ===== Top navbar: brand gradient, flush with the hero ===== */
 .bd-header, .bd-header.navbar {
-  background: linear-gradient(135deg, #2c3e50 0%, #18bc9c 100%) !important;
+  background: linear-gradient(135deg, #1E3446 0%, #3E5A80 50%, #6F82B1 100%) !important;
   box-shadow: none !important;
 }
 .bd-header .navbar-nav li a.nav-link,
@@ -74,10 +74,10 @@
 .bd-header .navbar-icon-links a:hover,
 .bd-header .navbar-icon-links a:focus,
 .bd-header .theme-switch-button:hover,
-.bd-header .theme-switch-button:focus { color: #dde9e6 !important; text-decoration: none !important; }
+.bd-header .theme-switch-button:focus { color: #B4C9EA !important; text-decoration: none !important; }
 .bd-header .navbar-icon-links a:hover i,
 .bd-header .navbar-icon-links a:focus i,
-.bd-header .theme-switch-button:hover i { color: #dde9e6 !important; }
+.bd-header .theme-switch-button:hover i { color: #B4C9EA !important; }
 /* niente barretta/underline sotto le voci e le icone della navbar */
 .bd-header .navbar-nav li a.nav-link,
 .bd-header .navbar-icon-links a,
@@ -133,15 +133,15 @@
 
 /* ===== Brand colours: replace the theme's purple + yellow highlight ===== */
 html[data-theme="light"], html[data-theme="dark"] {
-  --pst-color-secondary: #2c3e50;             /* was purple: # anchor, back-to-top */
+  --pst-color-secondary: #1E3446;             /* was purple: # anchor, back-to-top */
   --pst-color-secondary-text: #ffffff;
-  --pst-color-secondary-highlight: #18bc9c;   /* teal on hover */
+  --pst-color-secondary-highlight: #6F82B1;   /* teal on hover */
 }
-html[data-theme="light"] { --pst-color-target: #dde9e6; }  /* light teal highlight (was yellow) */
-html[data-theme="dark"]  { --pst-color-target: #1f4f45; }
+html[data-theme="light"] { --pst-color-target: #B4C9EA; }  /* light teal highlight (was yellow) */
+html[data-theme="dark"]  { --pst-color-target: #2A4668; }
 
-a.headerlink { color: #2c3e50 !important; }
-a.headerlink:hover { color: #3aa48e !important; }
+a.headerlink { color: #1E3446 !important; }
+a.headerlink:hover { color: #6F82B1 !important; }
 
 /* ===== Theme-switcher dropdown items: force readable text + icons ===== */
 .bd-header .dropdown-menu li button,
@@ -170,7 +170,7 @@ a.headerlink:hover { color: #3aa48e !important; }
 button.long-value-toggle {
   background: none;
   border: none;
-  color: #3aa48e;
+  color: #6F82B1;
   cursor: pointer;
   font-size: .8em;
   padding: 0 .25em;
@@ -185,16 +185,16 @@ button.long-value-toggle {
 .bd-article dt.sig .sig-name,
 .bd-article dt.sig .sig-name .pre,
 .bd-article dt.sig .descname,
-.bd-article dt.sig .descname .pre { color: #337e77 !important; }
+.bd-article dt.sig .descname .pre { color: #3E5A80 !important; }
 
 /* ===== Search field focus ring: teal instead of purple ===== */
-.bd-header form.bd-search:focus-within { box-shadow: 0 0 0 .1875rem #337e77 !important; }
+.bd-header form.bd-search:focus-within { box-shadow: 0 0 0 .1875rem #3E5A80 !important; }
 
 /* ===== Theme-switcher dropdown icons (Light / Dark / System): navy ===== */
 html[data-theme="light"] .bd-header .dropdown-menu .theme-change-button i,
-html[data-theme="light"] .bd-header .dropdown-menu .dropdown-item i { color: #2c3e50 !important; }
+html[data-theme="light"] .bd-header .dropdown-menu .dropdown-item i { color: #1E3446 !important; }
 html[data-theme="dark"] .bd-header .dropdown-menu .theme-change-button i,
-html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #dde9e6 !important; }
+html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #e6ecf2 !important; }
 
 /* ===== Docstring rubric headings (Processing steps, Main Outputs, ...) ===== */
 .bd-article p.rubric { font-size: 1rem; font-weight: 600; margin-bottom: .3rem; }
@@ -202,13 +202,13 @@ html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #dde
 /* ===== API field-list highlights (Parameters / Returns / Raises) ===== */
 .bd-article dl.field-list > dt,
 .bd-article table.field-list th.field-name {
-  background-color: #dde9e6 !important;
+  background-color: #B4C9EA !important;
   border-radius: 3px;
 }
 
 /* ===== Inline code (object, paths, ...): teal instead of purple ===== */
-html[data-theme="light"] { --pst-color-inline-code: #337e77; }
-html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
+html[data-theme="light"] { --pst-color-inline-code: #3E5A80; }
+html[data-theme="dark"]  { --pst-color-inline-code: #B4C9EA; }
 
 /* --- Footer: smaller text --- */
 .bd-footer .footer-items__start,
@@ -239,8 +239,8 @@ html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
 .bd-sidebar-primary .bd-sidenav a.reference.internal:hover,
 .bd-sidebar-primary .bd-sidenav a.reference.internal:focus {
   text-decoration: none !important;
-  border-left-color: #337e77;
-  color: #337e77;
+  border-left-color: #3E5A80;
+  color: #3E5A80;
 }
 
 /* "Section Navigation" heading -> same look as "On this page" */
@@ -249,7 +249,7 @@ html[data-theme="dark"]  { --pst-color-inline-code: #5cc0b0; }
   content: "In this section";
   font-size: 0.95rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1E3446;
 }
 
 /* --- Anchor jumps land below the sticky navbar --- */
@@ -259,7 +259,7 @@ html { scroll-padding-top: 5.5rem; }
 .bd-sidebar-primary .page-toc.onthispage i { display: none; }
 .bd-sidebar-primary .page-toc.onthispage {
   font-weight: 700;
-  color: #2c3e50;
+  color: #1E3446;
 }
 
 /* --- Consistent left sidebar width across all pages (desktop) --- */
@@ -292,4 +292,23 @@ html { scroll-padding-top: 5.5rem; }
   display: none !important;
   content: none !important;
   border-bottom: none !important;
+}
+
+
+/* ===== Steel-blue palette backgrounds / text / links ===== */
+html[data-theme="light"] {
+  --pst-color-background: #FFFFFF;
+  --pst-color-surface: #F4F4F4;
+}
+html[data-theme="dark"] {
+  --pst-color-background: #121C26;
+  --pst-color-surface: #1E3446;
+  --pst-color-text-base: #E6ECF2;
+  --pst-color-link: #B4C9EA;
+  --pst-color-link-hover: #B4C9EA;
+}
+/* Header/hero gradient in dark mode */
+html[data-theme="dark"] .dmo-hero,
+html[data-theme="dark"] .bd-header {
+  background: linear-gradient(135deg, #121C26 0%, #1E3446 50%, #3E5A80 100%) !important;
 }
