@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 20 15:56:08 2026
-
-@author: francesca.boschi
-"""
 
 # -*- coding: utf-8 -*-
 """
@@ -44,6 +38,7 @@ COLORS = {
     "ink": "#0F172A",          # main text
     "ink_muted": "#64748B",    # secondary text, axes
     "grid": "#E2E8F0",         # grid lines
+    "rule": "#CBD5E1",
     "surface": "#FFFFFF",
 
     # Walking-bout counts: blue ramp, light (shortest) -> dark (longest)
@@ -256,7 +251,7 @@ class DMOsReport:
                  amount_panels=None, pause_panels=None, show_values=True,
                  wear_valid_hours=None, variability_wb="long", kde_min_wb=5,
                  pause_kde_by_day=False, pause_reference_lines=False,
-                 report_title="Daily-life mobility report"):
+                 report_title="Mobility Report"):
         self.patient_id = str(patient_id)
         self.day_dmos_path = Path(day_dmos_path)
         self.wb_level_path = Path(wb_level_path)
@@ -486,7 +481,7 @@ class DMOsReport:
 
         h, l = ax.get_legend_handles_labels()
         order = [l.index(name) for name in ("LPA", "MVPA", "Longest WB")]
-        self.panel_header(ax, "Walking time & longest bout",
+        self.panel_header(ax, "Time Spent Walking & Longest Bout",
                           [h[i] for i in order], [l[i] for i in order], ncol=3)
 
     def plot_wb_counts(self, ax, show_xlabels=True, bar_width=0.55,
@@ -573,7 +568,7 @@ class DMOsReport:
 
         h1, l1 = ax.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
-        self.panel_header(ax, "Strides & distance", h1 + h2, l1 + l2, ncol=2)
+        self.panel_header(ax, "Total Strides Count & Estimated Distance Walked", h1 + h2, l1 + l2, ncol=2)
 
     # -----------------------------------------------------------------
     # PANEL - BOUT-TO-BOUT VARIABILITY
@@ -889,13 +884,24 @@ class DMOsReport:
                  ha="left", va="top", fontsize=9.5, color=COLORS["ink_muted"])
         fig.text(x1, y, f"Page {page} of {n_pages}", ha="right", va="top",
                  fontsize=8.5, color=COLORS["ink_muted"])
-        y_rule = y - 0.58 / page_h
-        fig.add_artist(Line2D([x0, x1], [y_rule, y_rule], transform=fig.transFigure,
-                              color=COLORS["grid"], linewidth=1))
+
         fig.text(x0, 0.3 / page_h, f"Generated {date.today():%d %b %Y}  ·  "
                  "dmos_kit", ha="left", va="bottom",
                  fontsize=7.5, color=COLORS["ink_muted"])
-
+    @staticmethod
+    def draw_section_header(fig, y_inches, title, subtitle, rule_gap=0.14):
+        """Horizontal rule across the page, then section title and subtitle."""
+        page_w, page_h = fig.get_size_inches()
+        x0, x1 = MARGIN_LEFT / page_w, 1 - MARGIN_RIGHT / page_w
+        y_rule = y_inches / page_h
+        fig.add_artist(Line2D([x0, x1], [y_rule, y_rule], transform=fig.transFigure,
+                              color=COLORS["rule"], linewidth=1))
+        y_title = y_inches - rule_gap
+        fig.text(x0, y_title / page_h, title, ha="left", va="top", fontsize=12.5,
+                 fontweight="bold", color=COLORS["ink"])
+        if subtitle:
+            fig.text(x0, (y_title - 0.24) / page_h, subtitle, ha="left", va="top",
+                     fontsize=8.5, color=COLORS["ink_muted"])
     @staticmethod
     def draw_section_header(fig, y_inches, title, subtitle):
         page_w, page_h = fig.get_size_inches()
@@ -912,7 +918,7 @@ class DMOsReport:
         panels = [k for k in ("wear_strip", "time", "wb_counts", "strides_distance")
                   if self.sections["amount_pattern"] and self.amount_panels.get(k)]
         if panels:
-            rows.append(("header", 0.5, "Amount & Pattern", "Daily totals for each recorded day"))
+            rows.append(("header", 0.62, "Amount & Pattern", "Daily DMOs: wearing time, time spent walking, bout pattern, strides count & estimated distance walked"))
             for key in panels:
                 if key == "wear_strip":
                     rows += [("space", 0.22), ("fixed", 0.32, [key])]  # title: "Wearing time (of 24 h)"
@@ -923,7 +929,7 @@ class DMOsReport:
             subtitle = (f"Coefficient of variation between "
                         f"{WB_CATEGORY_TEXT.get(self.variability_wb, self.variability_wb)}"
                         "  ·  dashed = rhythm parameters")
-            rows += [("header", 0.5, "Bout-to-bout variability", subtitle),
+            rows += [("header", 0.62, "Bout-to-bout variability", subtitle),
                      ("space", 0.38), ("flex", 1.15, ["variability"]),
                      ("space", 0.75)]             # day labels + number of WBs
         return rows, panels
@@ -932,7 +938,7 @@ class DMOsReport:
         """Gait distributions + Pauses."""
         rows = []
         if self.sections["kde"]:
-            rows += [("header", 0.5, "Gait distributions",
+            rows += [("header", 0.62, "Gait distributions",
                       "Walking-bout values pooled over the period, by bout duration"),
                      ("space", 0.25, "kde_legend"),
                      ("space", 0.25), ("flex", 0.9, ["kde_0", "kde_1"]),
@@ -941,7 +947,7 @@ class DMOsReport:
         pause_keys = [k for k in ("counts", "kde")
                       if self.sections["pauses"] and self.pause_panels.get(k)]
         if pause_keys:
-            rows.append(("header", 0.5, "Pauses",
+            rows.append(("header", 0.62, "Pauses",
                          "Time between consecutive walking bouts within a recording"))
             if "counts" in pause_keys:
                 rows += [("space", 0.42), ("flex", 1.0, ["pause_counts"]), ("space", 0.55)]
@@ -1060,9 +1066,9 @@ if __name__ == "__main__":
     OUTPUT_FOLDER = DATA_FOLDER / "prova_clinical_report"
 
     # Period (max 7 days) - choose ONE option
-    DATES = "all"                                   # all available days
+    # DATES = "all"                                   # all available days
     # DATES = ["2023-07-10", "2023-07-14"]          # selected days
-    # DATES = ("2023-07-10", "2023-07-16")          # from day -> to day (inclusive)
+    DATES = ("2023-07-10", "2023-07-16")          # from day -> to day (inclusive)
 
     SECTIONS = {"amount_pattern": True, "variability": True, "kde": True, "pauses": True}
     AMOUNT_PANELS = {"wear_strip": True, "time": True, "wb_counts": True,

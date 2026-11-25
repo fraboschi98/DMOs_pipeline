@@ -38,7 +38,7 @@ def main():
     # ------------------------------------------------------------------
     # User inputs
     # ------------------------------------------------------------------
-    patient_id = "PAT416"
+    patient_id = "PAT401"
 
     project_folder = Path(
         r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova_dmos_kit"
@@ -47,7 +47,7 @@ def main():
     patient_directory = project_folder / patient_id
 
     input_folder = patient_directory / "outputs_"
-    input_filename = "PAT416_multiple_dates_wb_parameters_average.csv"
+    input_filename = "PAT401_multiple_dates_wb_parameters_average.csv"
 
     wb_parameters_average_path = input_folder / input_filename
     output_folder = patient_directory / "outputs_"

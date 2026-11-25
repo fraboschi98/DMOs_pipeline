@@ -33,7 +33,7 @@ def main():
     # ------------------------------------------------------------------
     # Patient and project folder
     # ------------------------------------------------------------------
-    patient_id = "PAT416"
+    patient_id = "PAT401"
 
     project_folder = Path(
        r"C:\Users\francesca.boschi\OneDrive - University of Luxembourg (1)\MobilityAPP_Pipeline\Prova_dmos_kit"
