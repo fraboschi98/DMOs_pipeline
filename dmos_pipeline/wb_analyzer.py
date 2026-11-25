@@ -731,6 +731,7 @@ class WalkingBouts_analyzer:
     
         return self 
 
+    
     def compute_wb_parameters_average(self):
         """
         Compute walking-bout-level average gait parameters.
@@ -871,12 +872,14 @@ class WalkingBouts_analyzer:
             self.wb_dataframe[wb_info_columns]
             .drop_duplicates(subset=group_columns)
         )
+        
     
         self.wb_parameters_average = (
             wb_average
             .merge(n_strides_total, on=group_columns, how="left")
             .merge(n_strides_valid, on=group_columns, how="left")
             .merge(wb_info, on=group_columns, how="left")
+            
         )
     
         ordered_columns = [
@@ -893,7 +896,8 @@ class WalkingBouts_analyzer:
             "cadence_[steps_per_min]",
             "PA_type",
             "PA_state",
-        ] + columns_to_average
+        ] + columns_to_average      
+        
     
         self.wb_parameters_average = self.wb_parameters_average[ordered_columns]
     
