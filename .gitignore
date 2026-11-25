@@ -1,7 +1,3 @@
-
-For `.gitignore`, add:
-
-```gitignore
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
@@ -15,4 +11,7 @@ Thumbs.db
 
 *.log
 
-docs/_build/
+_build/
+
+# stray artifact folders
+Claude outputs/
