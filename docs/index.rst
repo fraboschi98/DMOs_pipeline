@@ -9,7 +9,7 @@ DMOs Pipeline
    <div class="dmo-hero">
      <div class="hero-inner">
        <div class="hero-text">
-         <h1>DMOkit Pipeline</h1>
+         <h1>DMOkit</h1>
          <p class="tagline">Standardized Digital Mobility Outcomes from bilateral
          foot-worn IMU recordings in free-living conditions.</p>
          <div class="hero-buttons">

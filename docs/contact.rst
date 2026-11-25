@@ -33,14 +33,11 @@ Authors
 Questions, bug reports and contributions are welcome via the
 `GitHub repository <https://github.com/fraboschi98/DMOs_pipeline>`_.
 
+For questions, you can also contact francesca.boschi@uni.lu or
+francesca.terranova@uni.lu.
+
 Funding
 -------
 
-This work was supported by the Luxembourg National Research Fund (FNR).
-
-.. note::
-
-   **TODO:** add the specific FNR grant reference(s) and any other funding to
-   acknowledge.
-
-How to cite dmokit: see :doc:`citing`.
+This work was supported by the Luxembourg National Research Fund (FNR),
+grant reference dHealthPD: 14146272.

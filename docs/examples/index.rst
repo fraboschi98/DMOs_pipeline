@@ -3,9 +3,8 @@
 Examples
 ========
 
-Worked examples for the main stages of the pipeline. Each card opens a page with
-the full script you can run and the resulting figures. These pages do not run
-during the build and need no dataset.
+Worked examples for the main stages of the pipeline. Each card opens a page that
+shows the lines of code and examples of resulting outputs.
 
 .. note::
 
