@@ -32,14 +32,14 @@ What is DMOkit?
 
 DMOkit is an open Python framework for standardized real-world Digital Mobility
 Outcomes (DMOs) from bilateral foot-worn IMUs. Starting from the detected strides
-and their stride-level gait parameters (produced by a validated algorithm such as
-gaitmap), DMOkit identifies walking bouts, applies quality control, and
-aggregates DMOs, following the Mobilise-D framework.
+and their stride-level gait parameters, DMOkit identifies walking bouts, applies
+quality control, and aggregates DMOs following the Mobilise-D framework. It also
+produces a clinical report that gives clinicians an easy overview of the
+patient's condition, with Parkinson's disease as the primary use case.
 
 Each processing step is a separate, self-contained class, so you can run one
 stage on its own or chain them into a full pipeline. Inputs and outputs are plain
-CSV/JSON files (no database needed), which keeps runs transparent and
-reproducible for clinical studies.
+CSV/JSON files, supporting reproducibility and standardization in research.
 
 Which are the functionalities?
 ------------------------------
@@ -49,23 +49,24 @@ Which are the functionalities?
 
    .. grid-item-card:: :octicon:`location` Walking bout identification
 
-      Identify walking bouts from the output of a validated gait algorithm
-      (e.g. gaitmap), using the Mobilise-D walking bout definition.
+      Identify walking bouts from the output of a validated gait algorithm —
+      here we employ gaitmap — using the Mobilise-D walking bout definition.
 
    .. grid-item-card:: :octicon:`checklist` Quality control
 
       Event- and stride-level quality checks that flag implausible strides and
-      events with labels, without removing any data.
+      events with labels.
 
    .. grid-item-card:: :octicon:`graph` DMO aggregation
 
-      Aggregates DMOs at walking bout, day and week level, following the
-      literature.
+      Aggregate DMOs at the walking bout, day and week level following the
+      Mobilise-D framework, and produce a clinical report for an easy overview
+      of the patient's mobility.
 
    .. grid-item-card:: :octicon:`database` Reproducible data structure
 
       Modular classes with plain CSV/JSON inputs and outputs, for reproducible
-      use in clinical studies.
+      use in research.
 
 How it works
 ------------
@@ -77,8 +78,8 @@ How it works
      <code>docs/_static/pipeline_schema.png</code> and replace this placeholder.
    </div>
 
-Explore the docs
-----------------
+Get started
+-----------
 
 .. grid:: 1 2 2 2
    :gutter: 3
