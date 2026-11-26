@@ -13,7 +13,7 @@ from .kde_plotter import KDEPlotter
 from .pause_plotter import PausePlotter
 from .complexity_analyzer import PAComplexity_analyzer
 from .clinical_report import DMOsReport
-from .clinical_report_single_day import CapacityPerformanceReport
+from .clinical_report_capacity_performance import CapacityPerformanceReport
 
 __all__ = [
     "GaitMapPipeline",
