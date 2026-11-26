@@ -328,3 +328,6 @@ html[data-theme="light"] .checker-bar-dark { display: none !important; }
 /* --- sidebar logo: navy logo in light, white logo in dark --- */
 html[data-theme="dark"] .sidebar-logo-light { display: none !important; }
 html[data-theme="light"] .sidebar-logo-dark { display: none !important; }
+
+/* --- hero image: no white box (PyData adds background to content images) --- */
+.dmo-hero .hero-image img { background: transparent !important; border-radius: 0 !important; }
