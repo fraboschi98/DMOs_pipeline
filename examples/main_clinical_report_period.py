@@ -53,7 +53,7 @@ def main():
     wb_level_path = input_folder / f"{patient_id}_multiple_dates_wb_parameters_average.csv"
 
     output_folder = project_folder / "prova_clinical_report"
-    logo_path = PROJECT_ROOT / "dmos_pipeline" / "logo.png"   # None = no logo
+    
 
     # Period (max 7 days) - choose ONE option
     # dates = "all"                                  # all available days
@@ -108,7 +108,7 @@ def main():
         kde_min_wb=kde_min_wb,
         pause_kde_by_day=pause_kde_by_day,
         pause_reference_lines=pause_reference_lines,
-        logo_path=logo_path,
+        
     )
 
     report.build()

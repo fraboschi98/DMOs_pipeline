@@ -184,8 +184,9 @@ MARGIN_RIGHT = 0.75
 MARGIN_TOP = 0.45
 MARGIN_BOTTOM = 0.55
 COLUMN_GAP = 0.35
-
-
+# Logo in <repo>/Images/ (one level above dmos_pipeline/)
+DEFAULT_LOGO_PATH = (Path(__file__).resolve().parents[1]
+                     / "Images" / "dmokit_C_nocircle_floor.png")
 # =====================================================================
 # FORMATTERS (module level, used by matplotlib tick formatters)
 # =====================================================================
@@ -263,7 +264,7 @@ class DMOsReport:
                  amount_panels=None, pause_panels=None, show_values=True,
                  wear_valid_hours=None, variability_wb="long", kde_min_wb=5,
                  pause_kde_by_day=False, pause_reference_lines=False,
-                 report_title="Mobility Report",logo_path=None):
+                 report_title="Mobility Report",logo_path=DEFAULT_LOGO_PATH):
         self.patient_id = str(patient_id)
         self.day_dmos_path = Path(day_dmos_path)
         self.wb_level_path = Path(wb_level_path)
@@ -898,21 +899,26 @@ class DMOsReport:
         fig.text(x1, y, f"Page {page} of {n_pages}", ha="right", va="top",
                  fontsize=8.5, color=COLORS["ink_muted"])
 
-                # Footer: logo (optional) + "Generated ... · dmoskit"
-        footer_y = 0.3                      # inches from the bottom of the page
+        # Footer: logo on the left margin + "Generated ..." on the same baseline as "kit"
+        footer_y = 0.3                      # bottom of the logo, inches from page bottom
+        logo_h = 0.24                       # logo height in inches
         text_x = MARGIN_LEFT
         if self.logo_path and self.logo_path.exists():
             logo = plt.imread(self.logo_path)
-            logo_h = 0.22                   # logo height in inches
-            logo_w = logo_h * logo.shape[1] / logo.shape[0]   # keep aspect ratio
-            ax_logo = fig.add_axes([MARGIN_LEFT / page_w, (footer_y - 0.04) / page_h,
+            if logo.ndim == 3 and logo.shape[2] == 4:          # crop transparent border
+                visible = logo[..., 3] > 0.02
+                rows = np.where(visible.any(axis=1))[0]
+                cols = np.where(visible.any(axis=0))[0]
+                logo = logo[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+            logo_w = logo_h * logo.shape[1] / logo.shape[0]    # keep aspect ratio
+            ax_logo = fig.add_axes([MARGIN_LEFT / page_w, footer_y / page_h,
                                     logo_w / page_w, logo_h / page_h])
-            ax_logo.imshow(logo)
+            ax_logo.imshow(logo, interpolation="none")         # full resolution in the PDF
             ax_logo.axis("off")
-            text_x = MARGIN_LEFT + logo_w + 0.08              # text starts after the logo
-        fig.text(text_x / page_w, footer_y / page_h,
-                 f"dmokit   ·   Generated {date.today():%d %b %Y}",
-                 ha="left", va="bottom", fontsize=7.5, color=COLORS["ink_muted"])
+            text_x = MARGIN_LEFT + logo_w + 0.08              # gap after the logo
+        fig.text(text_x / page_w, (footer_y + 0.02) / page_h,  # baseline = "kit" baseline
+                 f"Generated {date.today():%d %b %Y}",
+                 ha="left", va="baseline", fontsize=7.5, color=COLORS["ink_muted"])
     @staticmethod
     def draw_section_header(fig, y_inches, title, subtitle, rule_gap=0.14):
         """Horizontal rule across the page, then section title and subtitle."""
