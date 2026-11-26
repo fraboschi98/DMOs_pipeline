@@ -1,6 +1,6 @@
 /* ===== Landing hero banner (full-width, two-column) ===== */
 .dmo-hero {
-  background: linear-gradient(135deg, #1E3446 0%, #3E5A80 50%, #6F82B1 100%);
+  background: linear-gradient(135deg, #1e3446 0%, #3e5a80 40%, #52679f 70%, #6f82b1 100%);
   color: #fff;
   width: 100%;
   padding: 3rem 1.5rem;
@@ -24,7 +24,7 @@
 .dmo-hero .hero-btn.primary { background:#fff; color:#1E3446; }
 .dmo-hero .hero-btn.secondary { background:transparent; color:#fff; border:2px solid #fff; }
 .dmo-hero .hero-image { flex:0 0 auto; text-align:center; }
-.dmo-hero .hero-image img { max-width:230px; width:100%; height:auto; }
+.dmo-hero .hero-image img { max-width:460px; width:100%; height:auto; }
 
 /* ===== Home page: full-width content so the hero spans edge-to-edge (no 100vw -> no horizontal scroll) ===== */
 .bd-container__inner.bd-page-width:has(.dmo-hero) {
@@ -63,7 +63,7 @@
 
 /* ===== Top navbar: brand gradient, flush with the hero ===== */
 .bd-header, .bd-header.navbar {
-  background: linear-gradient(135deg, #1E3446 0%, #3E5A80 50%, #6F82B1 100%) !important;
+  background: linear-gradient(135deg, #1e3446 0%, #3e5a80 40%, #52679f 70%, #6f82b1 100%) !important;
   box-shadow: none !important;
 }
 .bd-header .navbar-nav li a.nav-link,
@@ -135,13 +135,13 @@
 html[data-theme="light"], html[data-theme="dark"] {
   --pst-color-secondary: #1E3446;             /* was purple: # anchor, back-to-top */
   --pst-color-secondary-text: #ffffff;
-  --pst-color-secondary-highlight: #6F82B1;   /* teal on hover */
+  --pst-color-secondary-highlight: #52679F;   /* teal on hover */
 }
-html[data-theme="light"] { --pst-color-target: #B4C9EA; }  /* light teal highlight (was yellow) */
+html[data-theme="light"] { --pst-color-target: #d8e0ed; }
 html[data-theme="dark"]  { --pst-color-target: #2A4668; }
 
 a.headerlink { color: #1E3446 !important; }
-a.headerlink:hover { color: #6F82B1 !important; }
+a.headerlink:hover { color: #52679F !important; }
 
 /* ===== Theme-switcher dropdown items: force readable text + icons ===== */
 .bd-header .dropdown-menu li button,
@@ -170,7 +170,7 @@ a.headerlink:hover { color: #6F82B1 !important; }
 button.long-value-toggle {
   background: none;
   border: none;
-  color: #6F82B1;
+  color: #52679F;
   cursor: pointer;
   font-size: .8em;
   padding: 0 .25em;
@@ -202,7 +202,7 @@ html[data-theme="dark"] .bd-header .dropdown-menu .dropdown-item i { color: #e6e
 /* ===== API field-list highlights (Parameters / Returns / Raises) ===== */
 .bd-article dl.field-list > dt,
 .bd-article table.field-list th.field-name {
-  background-color: #B4C9EA !important;
+  background-color: var(--pst-color-target) !important;
   border-radius: 3px;
 }
 
@@ -299,16 +299,32 @@ html { scroll-padding-top: 5.5rem; }
 html[data-theme="light"] {
   --pst-color-background: #FFFFFF;
   --pst-color-surface: #F4F4F4;
+  --pst-color-primary: #3E5A80;
+  --pst-color-primary-highlight: #52679F;
+  --pst-color-link: #52679F;
+  --pst-color-link-hover: #3E5A80;
+  --pst-color-link-higher-contrast: #52679F;
 }
 html[data-theme="dark"] {
   --pst-color-background: #121C26;
   --pst-color-surface: #1E3446;
   --pst-color-text-base: #E6ECF2;
+  --pst-color-primary: #B4C9EA;
+  --pst-color-primary-highlight: #6F82B1;
   --pst-color-link: #B4C9EA;
-  --pst-color-link-hover: #B4C9EA;
+  --pst-color-link-hover: #d8e0ed;
+  --pst-color-link-higher-contrast: #B4C9EA;
 }
-/* Header/hero gradient in dark mode */
-html[data-theme="dark"] .dmo-hero,
-html[data-theme="dark"] .bd-header {
-  background: linear-gradient(135deg, #121C26 0%, #1E3446 50%, #3E5A80 100%) !important;
-}
+
+
+/* "On this page" / "In this section" label adapts to the theme */
+html[data-theme="dark"] .bd-sidebar-primary .page-toc.onthispage,
+html[data-theme="dark"] .bd-sidebar-primary .bd-links__title::before { color: #E6ECF2 !important; }
+
+/* --- checker bar: dark bar in light mode, white bar in dark mode --- */
+html[data-theme="dark"] .checker-bar-light { display: none !important; }
+html[data-theme="light"] .checker-bar-dark { display: none !important; }
+
+/* --- sidebar logo: navy logo in light, white logo in dark --- */
+html[data-theme="dark"] .sidebar-logo-light { display: none !important; }
+html[data-theme="light"] .sidebar-logo-dark { display: none !important; }

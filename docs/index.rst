@@ -18,7 +18,7 @@ DMOs Pipeline
          </div>
        </div>
        <div class="hero-image">
-         <img src="_static/icon_white.png" alt="DMOkit">
+         <img src="_static/hero_logo.png" alt="DMOkit">
        </div>
      </div>
    </div>
