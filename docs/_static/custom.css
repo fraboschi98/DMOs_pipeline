@@ -333,16 +333,16 @@ html[data-theme="light"] .sidebar-logo-dark { display: none !important; }
 .dmo-hero .hero-image img { background: transparent !important; border-radius: 0 !important; }
 
 /* ===== "How it works" ecosystem figure — transparent outside the rectangles ===== */
-.ecosystem-figure img,
-figure.ecosystem-figure img {
+img.ecosystem-figure,
+.ecosystem-figure img {
   background: transparent !important;
   border-radius: 0 !important;
 }
 
 
 /* ===== DMO sunburst chart (User guide) — transparent bg, centred ===== */
-.dmos-chart-figure img,
-figure.dmos-chart-figure img {
+img.dmos-chart-figure,
+.dmos-chart-figure img {
   background: transparent !important;
   border-radius: 0 !important;
   max-width: 260px;
