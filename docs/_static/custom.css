@@ -345,7 +345,7 @@ figure.ecosystem-figure img {
 figure.dmos-chart-figure img {
   background: transparent !important;
   border-radius: 0 !important;
-  max-width: 520px;
+  max-width: 260px;
   width: 100%;
   height: auto;
 }
