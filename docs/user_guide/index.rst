@@ -3,21 +3,22 @@
 User guide
 ==========
 
-This guide introduces **dmokit** and the ideas behind it. It walks through how to
-install the framework, what Digital Mobility Outcomes are and why they matter,
-the definitions and thresholds used to turn gait data into walking bouts, and the
-overall processing workflow. It is meant to be read start to finish, but each
-part also stands on its own.
+This guide introduces **dmokit** and the ideas behind it. Following the same
+logic as the paper, it builds up from a standardized gait data structure to a set
+of interchangeable processing blocks: how to install the framework, what Digital
+Mobility Outcomes are and why they matter, the definitions and thresholds used to
+turn gait data into walking bouts, and the overall workflow that chains the
+individual classes.
 
 .. note::
 
-   **TODO:** integrate the *report* module and the *complexity metrics* into this
-   guide once finalized.
+   **TODO:** integrate the *report* module into this guide once finalized.
 
 Installation
 ------------
 
-dmokit is open source and available on **GitHub**. The recommended way to use it
+dmokit is open source and available on `GitHub
+<https://github.com/fraboschi98/DMOs_pipeline>`_. The recommended way to use it
 is to clone the repository and install its dependencies into a dedicated
 environment:
 
@@ -49,30 +50,61 @@ wraps and integrates. This is why gaitmap is part of the dependencies listed in
 What are DMOs?
 --------------
 
-**Digital Mobility Outcomes (DMOs)** are quantitative measures of real-world
-walking derived from wearable IMU signals — walking speed, cadence, stride
-length, daily walking volume, and so on. Their value is that they are obtained
-objectively and over long periods of everyday life, rather than from a single
-supervised test in the clinic.
+**Digital Mobility Outcomes (DMOs)** are measures of a person's mobility in daily
+life, computed from data recorded by digital health technologies, most commonly
+body-worn inertial sensors. Because they are collected continuously and
+unobtrusively during normal activity, they capture real-world mobility rather
+than a single supervised test in the clinic. In dmokit, DMOs are derived from
+bilateral foot-worn IMUs and focus on walking: walking speed, cadence, stride
+length, daily walking volume, and so on.
 
-It is useful to distinguish two families of DMOs. **Micro** characteristics are
-spatiotemporal measures computed *within* a walking bout (for example stride
-length or gait velocity); they can be obtained both in the clinic and at home.
-**Macro** characteristics instead describe the *amount* and *pattern* of walking
-across the day and therefore require prolonged, free-living recording.
+DMOs span different levels of observation. The spatiotemporal **micro** measures
+— stride length, gait velocity, cadence and the like — characterise a single
+walking bout and can be obtained both from supervised clinical assessments and
+from free-living home monitoring, which makes them a natural bridge between the
+two settings. The **macro** measures instead describe the *amount* and *pattern*
+of walking across the day and only emerge from prolonged, unsupervised recording
+at home, complementing what the clinic can capture.
 
-dmokit organises its outputs along the **Mobilise-D DMO domains** — amount,
-pattern, pace, rhythm and bout-to-bout variability — and extends them to day- and
-week-level summaries.
+dmokit organises these outputs along the **Mobilise-D DMO domains** (amount,
+pattern, pace, rhythm and bout-to-bout variability) and summarises them at the
+**day** and **week** level. These summaries in turn feed a clinical **report**
+that gives clinicians an easy overview of a patient's real-world mobility.
 
 .. note::
 
-   **TODO:** add the DMO **sunburst chart** (micro vs macro parameters). Place it
-   in ``docs/_static/`` and reference it here, e.g.::
+   **TODO:** add the DMO **sunburst chart** that Fra B will upload (micro vs macro
+   parameters); place it in ``docs/_static/`` and adjust the text above to match
+   the families it shows. Reference it here, e.g.::
 
       .. image:: ../_static/dmos_sunburst.png
          :alt: DMO parameter families
          :align: center
+
+Standardization and Mobilise-D
+------------------------------
+
+Real-world DMOs are only comparable across studies, devices and cohorts if they
+are computed in the same way — from how a walking bout is defined to which days
+count as valid. Without shared definitions, two pipelines can report different
+values of *walking speed* or *daily walking volume* from the very same recording,
+which undermines their use as clinical endpoints (Micó-Amigo et al. 2023; Kluge
+et al. 2021).
+
+The **Mobilise-D** consortium addressed this by establishing consensus
+definitions and a validated framework for extracting real-world DMOs, together
+with its open reference implementation, **mobgap**, built around a single
+lower-back inertial sensor. These definitions — the walking-bout criteria, the
+DMO domains and the valid-day and wear-time rules — are what make results
+portable between cohorts and comparable with the wider literature on free-living
+mobility in Parkinson's disease (Del Din et al. 2016).
+
+**dmokit** adopts the same definitions and reporting conventions, but for a
+**bilateral foot-worn IMU** setup, acting as a foot-mounted companion to the
+lower-back mobgap reference. Its downstream analysis layer is deliberately
+independent of how strides are obtained: the reference upstream implementation
+relies on gaitmap (Küderle et al. 2024), but any stride source that respects the
+same data contract can be used in its place.
 
 The sections below give the operational definitions behind these outcomes, and
 the :doc:`../api` documents the classes that compute each of them.
@@ -199,25 +231,49 @@ At a glance, the data flows through five stages:
         -> WBpipeline         (walking bouts, pauses, breaks)
         -> Collector          (collect per-session outputs)
         -> WalkingBouts_analyzer / DayLevel_analyzer   (WB-, day-, week-level DMOs)
-        -> KDEPlotter         (distribution-based visualisation)
+        -> PAComplexity_analyzer  (complexity of the daily PA pattern)
+        -> KDEPlotter / PausePlotter   (distribution & pause visualisation)
 
-In words:
+Each block is documented below, with a link to its full API reference and to a
+worked example.
 
-#. **Stride-level processing** (:class:`~dmos_pipeline.gaitmap_pipeline.GaitMapPipeline`,
-   wrapping gaitmap) filters the signals, detects gait sequences, segments
-   strides, reconstructs the foot trajectory, computes stride parameters and
-   estimates wearing time.
-#. **Quality control** (:class:`~dmos_pipeline.quality_check.QualityCheck`) adds
-   event- and parameter-level labels, without removing rows.
-#. **Walking-bout extraction** (:class:`~dmos_pipeline.wb_pipeline.WBpipeline`)
-   detects pauses and breaks, splits the recording into segments and applies the
-   validity rule.
-#. **Collection** (:class:`~dmos_pipeline.csv_collector.Collector`) traverses a
-   participant directory and concatenates the per-session outputs.
-#. **Aggregation** (:class:`~dmos_pipeline.wb_analyzer.WalkingBouts_analyzer`,
-   :class:`~dmos_pipeline.day_analyzer.DayLevel_analyzer`) produces WB-, day- and
-   week-level DMOs, with distribution plots
-   (:class:`~dmos_pipeline.kde_plotter.KDEPlotter`).
+:class:`~dmos_pipeline.gaitmap_pipeline.GaitMapPipeline` — stride-level processing
+   Filters the signals, detects gait sequences, segments strides, reconstructs
+   the foot trajectory, computes stride parameters and estimates wearing time.
+   It wraps and integrates gaitmap. See :doc:`../examples/gaitmap_quality_check`.
+
+:class:`~dmos_pipeline.quality_check.QualityCheck` — quality control
+   Adds event- and parameter-level labels without removing rows, so nothing is
+   silently discarded. See :doc:`../examples/gaitmap_quality_check`.
+
+:class:`~dmos_pipeline.wb_pipeline.WBpipeline` — walking-bout extraction
+   Detects pauses and breaks, splits the recording into segments and applies the
+   validity rule to identify walking bouts. See :doc:`../examples/dmos_extraction`.
+
+:class:`~dmos_pipeline.csv_collector.Collector` — collection
+   Traverses a participant directory and concatenates the per-session outputs
+   into a single table. See :doc:`../examples/dmos_extraction`.
+
+:class:`~dmos_pipeline.wb_analyzer.WalkingBouts_analyzer` — walking-bout-level DMOs
+   Computes the micro and macro Digital Mobility Outcomes at the walking-bout
+   level. See :doc:`../examples/dmos_extraction`.
+
+:class:`~dmos_pipeline.day_analyzer.DayLevel_analyzer` — day- and week-level DMOs
+   Aggregates walking-bout outputs to day- and week-level summaries, applying the
+   valid-day and wear-time criteria. See :doc:`../examples/day_dmos`.
+
+:class:`~dmos_pipeline.complexity_analyzer.PAComplexity_analyzer` — complexity metrics
+   Encodes the day as a sequence of physical-activity states and measures the
+   temporal complexity of the daily walking pattern. See
+   :doc:`../examples/complexity`.
+
+:class:`~dmos_pipeline.kde_plotter.KDEPlotter` — distribution plots
+   Visualises the distribution of gait parameters across walking bouts with
+   kernel-density-estimate plots. See :doc:`../examples/kde`.
+
+:class:`~dmos_pipeline.pause_plotter.PausePlotter` — pause visualisation
+   Plots pauses and breaks within a recording to inspect how segments are
+   delimited.
 
 .. note::
 
@@ -232,9 +288,16 @@ In words:
 References
 ----------
 
-- gaitmap — Gait and Movement Analysis Package, MaD Lab, FAU Erlangen-Nürnberg. https://github.com/mad-lab-fau/gaitmap
+- Küderle et al. (2024) — *gaitmap*, Gait and Movement Analysis Package, MaD Lab, FAU Erlangen-Nürnberg. https://github.com/mad-lab-fau/gaitmap
+- Micó-Amigo et al. (2023) — technical validation of real-world gait within the Mobilise-D framework.
+- Kluge et al. (2021) — Mobilise-D consensus and validation of real-world DMOs.
+- Del Din et al. (2016) — free-living gait monitoring in Parkinson's disease.
+- Paraschiv-Ionescu et al. (2012) — locomotion-complexity (barcode) characterisation of daily activity.
+- *mobgap* — Mobilise-D reference pipeline for a single lower-back inertial sensor.
 
 .. note::
 
-   **TODO:** add the Mobilise-D reference(s) for the walking-bout definition and
-   the DMO domains, and any other sources the definitions above are based on.
+   **TODO:** complete the full bibliographic details (authors, title, venue, year,
+   DOI) for each reference above from the paper's reference list, and add any
+   further Mobilise-D sources behind the walking-bout definition and the DMO
+   domains.

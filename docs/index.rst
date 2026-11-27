@@ -28,7 +28,7 @@ DMOs Pipeline
    <div class="dmo-landing">
 
 What is DMOkit?
---------------
+---------------
 
 DMOkit is an open Python framework for standardized real-world Digital Mobility
 Outcomes (DMOs) from bilateral foot-worn IMUs. Starting from the strides and the
@@ -81,12 +81,13 @@ Key features
 How it works
 ------------
 
-.. raw:: html
+.. figure:: _static/dmos_ecosystem.png
+   :alt: DMOkit ecosystem
+   :align: center
+   :class: ecosystem-figure
 
-   <div class="schema-placeholder">
-     Pipeline schema — add the flowchart image at
-     <code>docs/_static/pipeline_schema.png</code> and replace this placeholder.
-   </div>
+   **DMOkit ecosystem** — From foot-worn IMU recordings to stride, walking-bout,
+   daily and complexity DMOs and the clinical report.
 
 Get started
 -----------
