@@ -71,15 +71,13 @@ pattern, pace, rhythm and bout-to-bout variability) and summarises them at the
 **day** and **week** level. These summaries in turn feed a clinical **report**
 that gives clinicians an easy overview of a patient's real-world mobility.
 
-.. note::
+.. figure:: ../_static/dmos_chart.png
+   :alt: DMO parameter families (micro vs macro)
+   :align: center
+   :class: dmos-chart-figure
 
-   **TODO:** add the DMO **sunburst chart** that Fra B will upload (micro vs macro
-   parameters); place it in ``docs/_static/`` and adjust the text above to match
-   the families it shows. Reference it here, e.g.::
-
-      .. image:: ../_static/dmos_sunburst.png
-         :alt: DMO parameter families
-         :align: center
+   The DMO families computed by dmokit, organised from micro (within-bout)
+   to macro (day- and week-level) characteristics.
 
 Standardization and Mobilise-D
 ------------------------------

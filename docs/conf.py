@@ -11,7 +11,8 @@ from pathlib import Path
 # Add project root to Python path so Sphinx can import dmos_pipeline
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-project = "DMOs Pipeline"
+project = "DMOkit"
+html_title = "DMOkit"
 author = "Francesca Boschi"
 copyright = "2026, University of Luxembourg, LCSB, Digital Medicine group"
 toc_object_entries_show_parents = "hide"

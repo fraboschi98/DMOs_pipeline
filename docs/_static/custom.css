@@ -338,3 +338,14 @@ figure.ecosystem-figure img {
   background: transparent !important;
   border-radius: 0 !important;
 }
+
+
+/* ===== DMO sunburst chart (User guide) — transparent bg, centred ===== */
+.dmos-chart-figure img,
+figure.dmos-chart-figure img {
+  background: transparent !important;
+  border-radius: 0 !important;
+  max-width: 520px;
+  width: 100%;
+  height: auto;
+}
