@@ -345,7 +345,7 @@ img.dmos-chart-figure,
 .dmos-chart-figure img {
   background: transparent !important;
   border-radius: 0 !important;
-  max-width: 260px;
+  max-width: 380px;
   width: 100%;
   height: auto;
 }
